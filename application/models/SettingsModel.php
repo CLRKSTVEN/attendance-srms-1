@@ -109,13 +109,18 @@ class SettingsModel extends CI_Model
             ->row();
     }
 
-    public function getSectionsByCourseAndMajor($course, $major)
-    {
-        return $this->db->get_where('sections', [
-            'Course' => $course,
-            'Major' => $major // assuming column is named `cMajor`
-        ])->result();
-    }
+// In SettingsModel
+public function getSectionsByCourseAndMajor($course, $major)
+{
+    $this->db->select('section, year_level, courseid');
+    $this->db->from('course_sections');  // Using the correct table: course_sections
+    $this->db->where('courseid', $course);  // Assuming 'courseid' matches the Course field
+    $this->db->where('id', $major);  // Assuming 'id' is the major identifier (adjust if needed)
+    $query = $this->db->get();
+
+    return $query->result();  // Returns the result
+}
+
 
     public function getSectionsByCourse($course)
     {
@@ -1354,7 +1359,8 @@ class SettingsModel extends CI_Model
 
     public function insertSection($data)
     {
-        return $this->db->insert('sections', $data);
+        return $this->db->insert('course_sections', $data);
+
     }
 
 
@@ -1451,30 +1457,27 @@ class SettingsModel extends CI_Model
         return $query->result();
     }
 
+function GetSection()
+{
+    $this->db->distinct();
+    $this->db->select('Section, YearLevel');
+    $this->db->from('course_sections'); // Change to 'course_sections'
+    $this->db->order_by('Section');
+    $this->db->group_by('YearLevel');
+    $query = $this->db->get();
+    return $query->result();
+}
 
-    function GetSection()
-    {
-        $this->db->distinct();
-        $this->db->select('Section, YearLevel');
-        $this->db->from('sections');
-        $this->db->order_by('Section');
-        $this->db->group_by('YearLevel');
-        $query = $this->db->get();
-        return $query->result();
-    }
-
-
-
-    function GetSection1()
-    {
-        $this->db->distinct();
-        $this->db->select('Section');
-        $this->db->from('sections');
-        $this->db->order_by('Section');
-        $this->db->group_by('Section');
-        $query = $this->db->get();
-        return $query->result();
-    }
+function GetSection1()
+{
+    $this->db->distinct();
+    $this->db->select('Section');
+    $this->db->from('course_sections'); // Change to 'course_sections'
+    $this->db->order_by('Section');
+    $this->db->group_by('Section');
+    $query = $this->db->get();
+    return $query->result();
+}
 
 
     public function get_subjects_by_yearlevel2($yearLevel)
@@ -1498,7 +1501,7 @@ class SettingsModel extends CI_Model
     public function get_sections_by_yearlevel($yearLevel)
     {
         $this->db->select('Section');
-        $this->db->from('sections');
+      $this->db->from('course_sections'); 
         $this->db->where('YearLevel', $yearLevel);
         $this->db->order_by('Section', 'ASC');
         $query = $this->db->get();
@@ -1550,7 +1553,7 @@ class SettingsModel extends CI_Model
     public function get_sections_by_course_and_yearlevel($yearLevel, $course, $major = null)
     {
         $this->db->select('Section');
-        $this->db->from('sections');
+    $this->db->from('course_sections'); 
         $this->db->where('YearLevel', $yearLevel);
         $this->db->where('Course', $course);
 
@@ -1624,16 +1627,14 @@ class SettingsModel extends CI_Model
     }
 
 
+public function get_courseTable()
+{
+    $this->db->select('courseid, CourseCode, CourseDescription');
+    $this->db->from('course_table');
+    $query = $this->db->get();
+    return $query->result(); // Return as an array of objects
+}
 
-    public function get_courseTable()
-    {
-        $this->db->distinct();
-        $this->db->select('CourseDescription'); // Replace 'Course' with the actual column name for courses in your table
-        $this->db->from('course_table');
-        $query = $this->db->get();
-
-        return $query->result();
-    }
 
 
     public function get_subjects_by_course_and_yearlevel($yearLevel, $course)
@@ -1685,7 +1686,7 @@ class SettingsModel extends CI_Model
     {
         $this->db->distinct();
         $this->db->select('YearLevel');
-        $this->db->from('sections');
+   $this->db->from('course_sections'); 
         $query = $this->db->get();
         return $query->result();
     }
@@ -1694,7 +1695,7 @@ class SettingsModel extends CI_Model
     {
         $this->db->distinct();
         $this->db->select('Course');
-        $this->db->from('sections');
+   $this->db->from('course_sections'); 
         $query = $this->db->get();
         return $query->result();
     }

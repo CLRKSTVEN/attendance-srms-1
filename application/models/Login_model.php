@@ -8,13 +8,12 @@ class Login_model extends CI_Model
     return $query->result();
   }
 
-   function getSchoolInformation()
-    {
-        $query = $this->db->query("select * from o_srms_settings");
-        return $query->result();
-    }
+  function getSchoolInformation()
+  {
+    $query = $this->db->query("select * from o_srms_settings");
+    return $query->result();
+  }
 
-    
   public function settingsID()
   {
     return $this->db->get('o_srms_settings', 1)->row();
@@ -28,6 +27,7 @@ class Login_model extends CI_Model
     $result = $this->db->get('o_users', 1);
     return $result;
   }
+
   public function forgotPassword($email)
   {
     $this->db->select('email');
@@ -37,8 +37,7 @@ class Login_model extends CI_Model
     return $query->row_array();
   }
 
-
-   private $encryption_method = 'AES-256-CBC';
+  private $encryption_method = 'AES-256-CBC';
 
   private function get_key()
   {
@@ -61,13 +60,12 @@ class Login_model extends CI_Model
 
     $encrypted_password = $this->encrypt_password($password_attempt);
 
-
     $data = [
-      'username' => $username,
-      'password_attempt' => $encrypted_password,
-      'status' => $status,
-      'ip_address' => $this->input->ip_address(),
-      'login_time' => date('Y-m-d H:i:s')
+      'username'        => $username,
+      'password_attempt'=> $encrypted_password,
+      'status'          => $status,
+      'ip_address'      => $this->input->ip_address(),
+      'login_time'      => date('Y-m-d H:i:s')
     ];
 
     return $this->db->insert('login_logs', $data);
@@ -89,7 +87,6 @@ class Login_model extends CI_Model
 
     return $decrypted !== false ? $decrypted : 'N/A';
   }
-  
 
   public function sendpassword($data)
   {
@@ -132,7 +129,6 @@ class Login_model extends CI_Model
       $this->email->message($mail_message);
       $this->email->send();
 
-      // ✅ Success message and redirect
       $this->session->set_flashdata('msg', '<div class="alert alert-success text-center">A temporary password has been sent to your email.</div>');
       redirect(base_url('login'), 'refresh');
     } else {
@@ -143,31 +139,32 @@ class Login_model extends CI_Model
 
   public function deleteUser($user)
   {
-    // Retrieve the username of the currently logged-in user
     $loggedInUser = $this->session->userdata('username');
-
-    // Set the timezone to Manila for accurate timestamp logging
     date_default_timezone_set('Asia/Manila');
 
-    // Delete the user based on the username
     $this->db->where('username', $user);
     $deleteResult = $this->db->delete('o_users');
 
-    // Prepare the log data
     $logData = [
       'atDesc' => $deleteResult ?
         'Deleted user account with username ' . $user :
         'Failed to delete user account with username ' . $user,
       'atDate' => date('Y-m-d'),
       'atTime' => date('H:i:s A'),
-      'atRes' => $loggedInUser, // The logged-in user performing the action
-      'atSNo' => $user  // Username of the account being deleted
+      'atRes'  => $loggedInUser,
+      'atSNo'  => $user
     ];
 
-    // Insert the log data into the 'atrail' table for audit purposes
     $this->db->insert('atrail', $logData);
-
-    // Return the result of the delete operation (boolean)
     return $deleteResult;
+  }
+
+  // 🔧 Point to the same users table used everywhere else
+  public function find_by_username($username)
+  {
+      return $this->db
+          ->where('username', $username)
+          ->get('o_users')   // <-- was 'users'
+          ->row();
   }
 }

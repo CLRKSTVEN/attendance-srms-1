@@ -110,23 +110,23 @@
                 <div class="logo-box">
                     <a href="#" class="logo text-center logo-dark">
                         <span class="logo-lg">
-                            <img src="<?= base_url(); ?>assets/images/srms-logo.png" alt="" height="18">
+                            <img src="<?= base_url(); ?>assets/images/srms-logo-1.png" alt="" height="18">
                             <!-- <span class="logo-lg-text-dark">Velonic</span> -->
                         </span>
                         <span class="logo-sm">
                             <!-- <span class="logo-lg-text-dark">V</span> -->
-                            <img src="<?= base_url(); ?>assets/images/srms-logo.png" alt="" height="22">
+                            <img src="<?= base_url(); ?>assets/images/srms-logo-1.png" alt="" height="22">
                         </span>
                     </a>
 
                     <a href="#" class="logo text-center logo-light">
                         <span class="logo-lg">
-                            <img src="<?= base_url(); ?>assets/images/srms-logo.png" alt="" height="45">
+                            <img src="<?= base_url(); ?>assets/images/srms-logo-1.png" alt="" height="45">
                             <!-- <span class="logo-lg-text-dark">Velonic</span> -->
                         </span>
                         <span class="logo-sm">
                             <!-- <span class="logo-lg-text-dark">V</span> -->
-                            <img src="<?= base_url(); ?>assets/images/srms-logo.png" alt="" height="22">
+                            <img src="<?= base_url(); ?>assets/images/srms-logo-1.png" alt="" height="22">
                         </span>
                     </a>
                 </div>

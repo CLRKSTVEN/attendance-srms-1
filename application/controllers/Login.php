@@ -112,7 +112,7 @@ class Login extends CI_Controller
                 $mail_message .= '<br><br>Thank you for signing up!' . "\r\n";
                 $mail_message .= '<br><br>You may now login to the system using <span style="color:red; font-weight:bold;">' . $StudentNumber . '</span> as your username and <span style="color:red; font-weight:bold;">' . $pass . ' </span> as your password.' . "\r\n";
                 $mail_message .= '<br><br>Thanks & Regards,';
-                $mail_message .= '<br>SRMS - Online';
+                $mail_message .= '<br>Attendance Portal';
 
                 $this->email->from('no-reply@lxeinfotechsolutions.com', 'School Records Management System')
                     ->to($email)
@@ -160,167 +160,24 @@ class Login extends CI_Controller
             $email = $this->input->post('email');
             $contactNos = $this->input->post('contactNos');
             $course = $this->input->post('course');
-
-
-            // $que=$this->db->query("select * from reservation where username='".$lrn."'");
-            // $row = $que->num_rows();
-            // if($row)
-            // {
-            // $this->session->set_flashdata('msg', '<div class="alert alert-success text-center"><b>Record already exist.</b></div>');
-            // }
-            // else
-            // {
             $que = $this->db->query("insert into reservation values(0,'$appDate','$firstName','$middleName','$lastName','$nameExtn','$sex','$bDate','$age','$civilStatus','$empStatus','$ad_street','$ad_barangay','$ad_city','$ad_province','$email','$contactNos','$course','Pending')");
             $this->session->set_flashdata('msg', '<div class="alert alert-success text-center"><b>Reservation details have been processed successfully.  You will be notified via text or phone call for the status of your reservation.  Thank you.</b></div>');
             redirect('Login/reservation');
 
-            //   //Email Notification
-            //     $this->load->config('email');
-            //     $this->load->library('email');
-            //     $mail_message = 'Dear ' . $fname . ',' . "\r\n"; 
-            //     $mail_message .= '<br><br>Thank you for reservation!' . "\r\n"; 
-            //     $mail_message .= '<br><br>You may now login to the system using <span style="color:red; font-weight:bold;">' .$lrn. '</span> as your username and <span style="color:red; font-weight:bold;">' . $pass . ' </span> as your password.' ."\r\n";
-            //     $mail_message .= '<br><br>Thanks & Regards,';
-            //     $mail_message .= '<br>SRMS - Online';
-
-            //     $this->email->from('no-reply@lxeinfotechsolutions.com', 'SRMS Online Team')
-            //         ->to($email)
-            //         ->subject('Scholarship Reservation')
-            //         ->message($mail_message);
-            //         $this->email->send();
-            //redirect('Login/reservation');
 
         }
     }
 
 
-    // function auth()
-    // {
-    //     $username = $this->input->post('username', TRUE);
-    //     $raw_password  = $this->input->post('password', TRUE); 
-    //     $password = sha1($this->input->post('password', TRUE));
-    //     $sy = $this->input->post('sy', TRUE);
-    //     $semester = $this->input->post('semester', TRUE);
-
-
-    //     // Validate user credentials
-    //     $validate = $this->Login_model->validate($username, $password);
-
-    //     if ($validate->num_rows() > 0) {
-    //         $data = $validate->row_array();
-    //         $username = $data['username'];
-    //         $fname = $data['fName'];
-    //         $mname = $data['mName'];
-    //         $lname = $data['lName'];
-    //         $avatar = $data['avatar'];
-    //         $email = $data['email'];
-    //         $level = $data['position'];
-    //         $IDNumber = $data['IDNumber'];
-    //         $position = $data['position'];
-    //         $acctStat = $data['acctStat']; // Assuming `acctStat` is a column in the database
-
-    //         if ($acctStat === 'active') {
-    //                $this->Login_model->log_login_attempt($username, $raw_password, 'success');
-    //             // User data to be stored in session
-    //             $user_data = array(
-    //                 'username'  => $username,
-    //                 'fname'  => $fname,
-    //                 'mname'  => $mname,
-    //                 'lname'  => $lname,
-    //                 'avatar'  => $avatar,
-    //                 'email'     => $email,
-    //                 'level'     => $level,
-    //                 'IDNumber'     => $IDNumber,
-    //                 'position'     => $position,
-    //                 'sy' => $sy,
-    //                 'semester' => $semester,
-    //                 'logged_in' => TRUE
-    //             );
-    //             $this->session->set_userdata($user_data);
-
-    //             // Redirect based on user level
-    //             switch ($level) {
-    //                 case 'Admin':
-    //                     redirect('page/admin');
-    //                     break;
-    //                 case 'School Admin':
-    //                     redirect('page/school_admin');
-    //                     break;
-    //                 case 'Registrar':
-    //                     redirect('page/registrar');
-    //                     break;
-    //                 case 'Head Registrar':
-    //                     redirect('page/registrar');
-    //                     break;
-    //                 case 'Super Admin':
-    //                     redirect('page/superAdmin');
-    //                     break;
-    //                 case 'Property Custodian':
-    //                     redirect('page/p_custodian');
-    //                     break;
-    //                 case 'HR Admin':
-    //                     redirect('page/hr');
-    //                     break;
-    //                 case 'Academic Officer':
-    //                     redirect('page/a_officer');
-    //                     break;
-    //                 case 'Student':
-    //                     redirect('page/student');
-    //                     break;
-    //                 case 'Stude Applicant':
-    //                     redirect('page/student_registration');
-    //                     break;
-    //                 case 'Accounting':
-    //                     redirect('page/accounting');
-    //                     break;
-    //                 case 'Instructor':
-    //                     redirect('page/Instructor');
-    //                     break;
-    //                 case 'Encoder':
-    //                     redirect('page/encoder');
-    //                     break;
-    //                 case 'Human Resource':
-    //                     redirect('page/hr');
-    //                     break;
-    //                 case 'Guidance':
-    //                     redirect('page/guidance');
-    //                     break;
-    //                 case 'School Nurse':
-    //                     redirect('page/medical');
-    //                     break;
-    //                 case 'IT':
-    //                     redirect('page/IT');
-    //                     break;
-    //                 case 'Librarian':
-    //                     redirect('page/library');
-    //                     break;
-    //                 case 'Principal':
-    //                     redirect('page/s_principal');
-    //                     break;
-    //                 default:
-    //                     // Handle unexpected levels
-    //                     $this->session->set_flashdata('danger', 'Unauthorized access.');
-    //                     redirect('login');
-    //             }
-    //         } else {
-    //             // ❌ Log failed due to inactive account
-    //             $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
-    //             $this->session->set_flashdata('danger', 'Your account is not active. Please contact support.');
-    //             redirect('login');
-    //         }
-    //     } else {
-    //         // ❌ Log failed due to invalid credentials
-    //         $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
-    //         $this->session->set_flashdata('danger', 'The username or password is incorrect!');
-    //         redirect('login');
-    //     }
-    // }
 function auth()
 {
-    $username = $this->input->post('username', TRUE);
-    $raw_password  = $this->input->post('password', TRUE);
-    $password = sha1($this->input->post('password', TRUE));
-    $sy = $this->input->post('sy', TRUE);
+    $username     = $this->input->post('username', TRUE);
+
+    // 🔧 Do NOT XSS-filter the password (keeps characters intact)
+    $raw_password = $this->input->post('password');   // <-- removed TRUE
+    $password     = sha1($raw_password);              // <-- hash the raw input
+
+    $sy       = $this->input->post('sy', TRUE);
     $semester = $this->input->post('semester', TRUE);
 
     // NEW: capture next from POST first (form), then GET
@@ -329,27 +186,28 @@ function auth()
     $validate = $this->Login_model->validate($username, $password);
 
     if ($validate->num_rows() > 0) {
-        $data = $validate->row_array();
+        $data     = $validate->row_array();
         $username = $data['username'];
-        $fname = $data['fName'];
-        $mname = $data['mName'];
-        $lname = $data['lName'];
-        $avatar = $data['avatar'];
-        $email = $data['email'];
-        $level = $data['position'];
+        $fname    = $data['fName'];
+        $mname    = $data['mName'];
+        $lname    = $data['lName'];
+        $avatar   = $data['avatar'];
+        $email    = $data['email'];
+        $level    = $data['position'];
         $IDNumber = $data['IDNumber'];
         $position = $data['position'];
         $acctStat = $data['acctStat'];
 
-        if ($acctStat === 'active') {
+        // 🔧 Be tolerant to case (active/Active/ACTIVE)
+        if (strtolower((string)$acctStat) === 'active') {
             $this->Login_model->log_login_attempt($username, $raw_password, 'success');
 
             $user_data = array(
                 'username'  => $username,
-                'fname'  => $fname,
-                'mname'  => $mname,
-                'lname'  => $lname,
-                'avatar'  => $avatar,
+                'fname'     => $fname,
+                'mname'     => $mname,
+                'lname'     => $lname,
+                'avatar'    => $avatar,
                 'email'     => $email,
                 'level'     => $level,          // <-- Attendance::checkin reads this
                 'IDNumber'  => $IDNumber,
@@ -360,14 +218,30 @@ function auth()
             );
             $this->session->set_userdata($user_data);
 
-            // NEW: if there's a safe "next", go there first (same-host only)
-            if ($next) {
-                $host = parse_url($next, PHP_URL_HOST);
-                if (!$host || strcasecmp($host, $_SERVER['HTTP_HOST']) === 0) {
-                    redirect($next);
-                    return;
-                }
-            }
+    if ($next) {
+    $host  = parse_url($next, PHP_URL_HOST);
+    $path  = parse_url($next, PHP_URL_PATH) ?: '';
+    $query = parse_url($next, PHP_URL_QUERY);
+    $rel   = ltrim($path . ($query ? ('?' . $query) : ''), '/');
+
+    // Compute the *current* origin (proxy/CDN aware)
+    $xfProto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null;
+    $xfHost  = $_SERVER['HTTP_X_FORWARDED_HOST']  ?? null;
+    $scheme  = $xfProto ?: ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+    $hostNow = $xfHost  ?: ($_SERVER['HTTP_HOST'] ?? parse_url(base_url(), PHP_URL_HOST));
+    $origin  = $scheme . '://' . $hostNow;
+
+    // Relative NEXT → make an absolute URL on the current origin
+    if (!$host && $rel) { redirect(rtrim($origin,'/').'/'.$rel); return; }
+
+    // Absolute + same host → allow as-is
+    if ($host && strcasecmp($host, $hostNow) === 0) { redirect($next); return; }
+
+    // Absolute but different host → sanitize to current origin + relative path
+    if ($rel) { redirect(rtrim($origin,'/').'/'.$rel); return; }
+}
+
+
 
             // Fallback: your existing role-based redirects
             switch ($level) {
@@ -379,8 +253,8 @@ function auth()
                 case 'Property Custodian':  redirect('page/p_custodian'); break;
                 case 'HR Admin':            redirect('page/hr'); break;
                 case 'Academic Officer':    redirect('page/a_officer'); break;
-                case 'Student':             redirect('page/student'); break; // keep your existing student landing
-                case 'Stude Applicant':     redirect('page/student_registration'); break;
+                case 'Student':             redirect('page/student'); break;
+                case 'Stude Applicant':     redirect('page/student'); break;   // <— changed
                 case 'Accounting':          redirect('page/accounting'); break;
                 case 'Instructor':          redirect('page/Instructor'); break;
                 case 'Encoder':             redirect('page/encoder'); break;
@@ -447,43 +321,5 @@ function auth()
         }
     }
 
-    // public function sendpassword($user)
-    // {
-    //     $this->load->library('email');
-    //     $this->email->set_mailtype("html");
-
-    //     $resetToken = sha1(time() . $user->IDNumber); // or a better token generator
-    //     $resetLink = base_url("login/reset_password/" . $resetToken);
-
-    //     // Save token in DB if you're validating it later (optional)
-    //     // $this->db->where('email', $user->email)->update('o_users', ['reset_token' => $resetToken]);
-
-    //     $school = $this->db->get('o_srms_settings')->row();
-    //     $schoolName = $school ? $school->SchoolName : 'SRMS Portal';
-
-    //     $message = '
-    // <div style="font-family: Arial, sans-serif; padding: 20px; background-color: #f8f9fa; color: #333;">
-    //     <h2 style="color: #007bff;">Password Reset Request</h2>
-    //     <p>Hello <strong>' . htmlspecialchars($user->fName) . '</strong>,</p>
-
-    //     <p>We received a request to reset your password for your <strong>' . htmlspecialchars($schoolName) . '</strong> account.</p>
-
-    //     <p style="margin: 20px 0;">
-    //         <a href="' . $resetLink . '" style="padding: 10px 20px; background-color: #007bff; color: #fff; text-decoration: none; border-radius: 5px;">Reset Your Password</a>
-    //     </p>
-
-    //     <p>If you didn\'t request a password reset, you can ignore this email. Your password will remain unchanged.</p>
-
-    //     <hr style="margin: 30px 0;">
-    //     <p style="font-size: 12px; color: #999;">
-    //         This is an automated message from ' . htmlspecialchars($schoolName) . '. Please do not reply.
-    //     </p>
-    // </div>';
-
-    //     $this->email->from('no-reply@srmsportal.com', $schoolName);
-    //     $this->email->to($user->email);
-    //     $this->email->subject('Reset Your Password - ' . $schoolName);
-    //     $this->email->message($message);
-    //     $this->email->send();
-    // }
+ 
 }

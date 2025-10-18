@@ -290,7 +290,15 @@ class StudentModel extends CI_Model
 	}
 
 
-	function totalProfile()
+	
+
+public function totalSignups()
+{
+    $q = $this->db->query("SELECT COUNT(*) AS StudeCount FROM studentsignup");
+    return $q->result();
+}
+
+function totalProfile()
 	{
 		$query = $this->db->query("SELECT count(StudentNumber) as StudeCount FROM studeprofile");
 		return $query->result();
@@ -1233,7 +1241,7 @@ class StudentModel extends CI_Model
 		$this->db->where('SY', $sy);
 		$this->db->where('Semester', $sem);
 		$this->db->where('Status', 'Enrolled');
-		$this->db->group_by(['Course', 'Major']);
+$this->db->group_by(['Course']);
 
 		$query = $this->db->get();
 		return $query->result();
@@ -1241,12 +1249,31 @@ class StudentModel extends CI_Model
 
 
 
-	//Sex Count Summary Per Semester
-	function SexCount($sem, $sy)
-	{
-		$query = $this->db->query("SELECT p.Sex, count(p.Sex) as Counts FROM studeprofile p join semesterstude ss on p.StudentNumber=ss.StudentNumber where ss.SY='" . $sy . "' and ss.Semester='" . $sem . "' group by p.Sex");
-		return $query->result();
-	}
+// Replaces the old SexCount($sem, $sy)
+public function SexCount($sem = null, $sy = null)
+{
+    // Normalize common variants to Male / Female / Unspecified
+    // Handles: M, F, Male, Female, mixed case, extra spaces, blanks/nulls
+    $normalized = "
+        CASE
+          WHEN UPPER(TRIM(Sex)) IN ('M','MALE') THEN 'Male'
+          WHEN UPPER(TRIM(Sex)) IN ('F','FEMALE') THEN 'Female'
+          ELSE 'Unspecified'
+        END
+    ";
+
+    return $this->db->select("$normalized AS Sex, COUNT(*) AS Counts", false)
+                    ->from('studentsignup')
+                    // NOTE: studentsignup doesn't have SY/Semester columns.
+                    // If you want “current term only”, filter by EnrollmentDate range here.
+                    // ->where('EnrollmentDate >=', $from) 
+                    // ->where('EnrollmentDate <=', $to)
+                    ->group_by('Sex')
+                    ->order_by('Sex')
+                    ->get()
+                    ->result();
+}
+
 	//Sex Summary
 	function sexList($sem, $sy, $sex)
 	{
@@ -2021,79 +2048,45 @@ class StudentModel extends CI_Model
 	}
 
 
+/**
+ * SectionCounts: counts enrollees per Section for a given SY/Sem.
+ * - If $course is provided, filter by course.
+ * - If $major  is provided and not '', filter by that major.
+ * - If $major === '' (explicit empty string), show only blank/NULL majors.
+ * - If $major is null (not provided), include ALL majors (no major filter).
+ */
+public function SectionCounts($sy, $sem, $course = null, $major = null)
+{
+    $sectionExpr = "CASE WHEN NULLIF(TRIM(s.Section),'') IS NULL THEN 'Not Set' ELSE TRIM(s.Section) END";
+
+    $this->db->select("$sectionExpr AS Section, COUNT(DISTINCT s.StudentNumber) AS Counts", false)
+             ->from('semesterstude s')
+             ->where('s.SY', $sy)
+             ->where('s.Semester', $sem)
+             ->where('s.Status', 'Enrolled');
+
+    if (!empty($course)) {
+        $this->db->where('s.Course', $course);
+    }
+
+    if ($major !== null) {
+        if ($major === '') {
+            $this->db->group_start()
+                     ->where('s.Major', '')
+                     ->or_where('s.Major IS NULL', null, false)
+                     ->group_end();
+        } else {
+            $this->db->where('s.Major', $major);
+        }
+    }
+
+    return $this->db->group_by($sectionExpr, false)
+                    ->order_by('Section', 'ASC')
+                    ->get()
+                    ->result();
+}
 
 
-	function SectionCounts($course, $major, $sy, $sem)
-	{
-		$this->db->select('s.Section, COUNT(DISTINCT s.StudentNumber) AS sectionCounts', false);
-		$this->db->from('semesterstude s');
-		// join not required for counting, but harmless if you need profile fields later
-		// $this->db->join('studeprofile p', 'p.StudentNumber = s.StudentNumber', 'left');
-
-		$this->db->where('s.SY', $sy);
-		$this->db->where('s.Semester', $sem);
-		$this->db->where('s.Status', 'Enrolled');
-		$this->db->where('s.Course', $course);
-
-		if (!empty($major)) {
-			$this->db->where('s.Major', $major);
-		} else {
-			$this->db->group_start()
-				->where('s.Major', '')
-				->or_where('s.Major IS NULL', null, false)
-				->group_end();
-		}
-
-		$this->db->group_by('s.Section');
-		$this->db->order_by('s.Section', 'ASC');
-
-		return $this->db->get()->result();
-	}
-
-
-
-
-	//Masterlist by Enrolled Online
-	function byEnrolledOnline($department, $sy)
-	{
-		$query = $this->db->query("select * from studeprofile p join online_enrollment oe on p.StudentNumber=oe.StudentNumber where oe.SY='" . $sy . "' and oe.enrolStatus='Enrolled'");
-		return $query->result();
-	}
-
-	//Masterlist by Enrolled Semester
-	function byEnrolledOnlineSem($sem, $sy)
-	{
-		$query = $this->db->query("select * from studeprofile p join online_enrollment oe on p.StudentNumber=oe.StudentNumber where oe.Semester='" . $sem . "' and oe.SY='" . $sy . "' and oe.enrolStatus='Enrolled'");
-		return $query->result();
-	}
-
-	//Masterlist by Enrolled Online (ALL)
-	function byEnrolledOnlineAll()
-	{
-		$query = $this->db->query("select p.StudentNumber, concat(p.LastName,', ',p.FirstName,' ',p.MiddleName) as StudeName, oe.Course, oe.YearLevel, oe.enrolStatus, concat(oe.Semester,' ',oe.SY) as SY, oe.downPayment, oe.downPaymentStat  from studeprofile p join online_enrollment oe on p.StudentNumber=oe.StudentNumber order by p.LastName");
-		return $query->result();
-	}
-
-	//Masterlist By Section
-	function bySection($section, $semester, $sy)
-	{
-		$query = $this->db->query("select * from studeprofile p join semesterstude s on p.StudentNumber=s.StudentNumber where s.Section='" . $section . "' and s.Semester='" . $semester . "' and s.SY='" . $sy . "' and s.Status='Enrolled' order by p.LastName, p.Sex");
-		return $query->result();
-	}
-
-	//Masterlist by SY
-	function bySY($sy, $sem)
-	{
-		$this->db->select('p.*, s.Course, s.Section, s.Major, s.YearLevel, s.semstudentid, p.email');
-		$this->db->from('studeprofile p');
-		$this->db->join('semesterstude s', 'p.StudentNumber = s.StudentNumber');
-		$this->db->where('s.SY', $sy);
-		$this->db->where('s.Semester', $sem);
-		$this->db->where('s.Status', 'Enrolled');
-		$this->db->order_by('p.LastName', 'ASC');
-		$query = $this->db->get();
-		return $query->result();
-	}
 
 	//Masterlist by Qualification
 	public function byQualification($qual)
@@ -2701,13 +2694,17 @@ class StudentModel extends CI_Model
 	}
 
 
+public function getstudentsignupbyId($StudentNumber)
+{
+    $this->db->select('StudentNumber, FirstName, MiddleName, LastName, Sex, CivilStatus, birthDate, Age, contactNo, email, 
+                        Course1, Course2, Course3, Major1, Major2, Major3, yearLevel, section');
+    $this->db->from('studentsignup');
+    $this->db->where('StudentNumber', $StudentNumber);
+    $query = $this->db->get();
 
+    return $query->row();  // Return the first row as an object (single result)
+}
 
-	public function getstudentsignupbyId($StudentNumber)
-	{
-		$query = $this->db->query("SELECT * FROM studentsignup WHERE StudentNumber = '" . $StudentNumber . "'");
-		return $query->result();
-	}
 
 
 	public function getstudentbyId($StudentNumber)
@@ -2718,10 +2715,10 @@ class StudentModel extends CI_Model
 
 
 	public function updatestudentsignup($StudentNumber, $updateData)
-	{
-		$this->db->where('StudentNumber', $StudentNumber);
-		$this->db->update('studentsignup', $updateData);
-	}
+{
+    $this->db->where('StudentNumber', $StudentNumber);
+    $this->db->update('studentsignup', $updateData);  // Update the correct fields
+}
 
 
 
@@ -2775,7 +2772,12 @@ class StudentModel extends CI_Model
 	{
 		return $this->db->insert('studeadditional', $data);
 	}
-
+public function updateStudent($id, $data)
+{
+    // Ensure we're updating based on StudentNumber
+    $this->db->where('StudentNumber', $id);
+    return $this->db->update('studentsignup', $data);
+}
 	public function updateStudentAccount($studentNumber, $SY, $data)
 	{
 		$this->db->where('StudentNumber', $studentNumber);
@@ -3765,10 +3767,35 @@ class StudentModel extends CI_Model
 		$this->db->from('semesterstude');
 		$this->db->where('Semester', $sem);
 		$this->db->where('SY', $sy);
-		$this->db->group_by(['Course', 'Major']);
+$this->db->group_by(['Course']);
 		$this->db->order_by('Course', 'ASC');
 		return $this->db->get()->result();
 	}
+public function MajorCount($sem, $sy)
+{
+    return $this->db->select("Major, COUNT(*) as Counts")
+        ->from('semesterstude')
+        ->where('SY', $sy)
+        ->where('Semester', $sem)
+        ->where('Status', 'Enrolled')
+        ->group_by(['Major'])
+        ->order_by('Major', 'ASC')
+        ->get()
+        ->result();
+}
+public function YearLevelCount($sem, $sy)
+{
+    return $this->db->select("YearLevel, COUNT(*) as Counts")
+        ->from('semesterstude')
+        ->where('SY', $sy)
+        ->where('Semester', $sem)
+        ->where('Status', 'Enrolled')
+        ->group_by(['YearLevel'])
+        // keeps 1st..4th natural order; falls back to alphabetical
+        ->order_by("FIELD(YearLevel,'1st','2nd','3rd','4th'), YearLevel", '', false)
+        ->get()
+        ->result();
+}
 
 
 	public function getStudentsByCourseMajor($course, $major)
@@ -4262,4 +4289,138 @@ class StudentModel extends CI_Model
 
 		return $this->db->query($sql, $params)->result();
 	}
+public function profileListAll()
+{
+    $sql = "
+      SELECT sp.StudentNumber, sp.LastName, sp.FirstName, sp.MiddleName, sp.birthDate, 0 AS is_signup_only
+      FROM studeprofile sp
+      UNION ALL
+      SELECT su.StudentNumber, su.LastName, su.FirstName, su.MiddleName, su.birthDate, 1 AS is_signup_only
+      FROM studentsignup su
+      WHERE NOT EXISTS (SELECT 1 FROM studeprofile sp2 WHERE sp2.StudentNumber = su.StudentNumber)
+      ORDER BY LastName, FirstName, StudentNumber
+    ";
+    return $this->db->query($sql)->result();
+}
+public function totalSignupsByStatus($status)
+{
+    return $this->db->select('COUNT(*) AS StudeCount')
+                    ->where('Status', $status)   // e.g. 'For Confirmation'
+                    ->get('studentsignup')->result();
+}
+
+// List: show all signups (keep aliases so views don't change)
+public function signupListAll()
+{
+    // If your column names differ, alias them here to match the view fields
+    return $this->db->select("
+                StudentNumber,
+                TRIM(LastName)   AS LastName,
+                TRIM(FirstName)  AS FirstName,
+                TRIM(MiddleName) AS MiddleName,
+                birthDate        AS birthDate,
+                yearLevel        AS yearLevel,
+                section          AS section,
+                Status           AS signupStatus,
+                EnrollmentDate   AS EnrollmentDate
+           ")
+           ->from('studentsignup')
+           ->order_by('LastName, FirstName, StudentNumber')
+           ->get()
+           ->result();
+}
+// studentsignup → Masterlist by Grade Level (returns aliases the view needs)
+public function signupByGradeLevel($yearlevel)
+{
+    // Course alias: prefer Course1, then Course2, then Course3
+    $courseExpr = "COALESCE(NULLIF(Course1, ''), NULLIF(Course2, ''), NULLIF(Course3, ''))";
+
+    return $this->db->select("
+                StudentNumber,
+                TRIM(LastName)   AS LastName,
+                TRIM(FirstName)  AS FirstName,
+                TRIM(MiddleName) AS MiddleName,
+                birthDate,
+                {$courseExpr}    AS Course, 
+                section          AS Section, 
+                email  
+           ", false)
+           ->from('studentsignup')
+           ->where('yearLevel', $yearlevel)
+           ->order_by('LastName, FirstName, StudentNumber')
+           ->get()
+           ->result();
+}
+
+// Enrollment Summary for the same list (Course vs enrollees)
+public function signupByGradeLevelCount($yearlevel)
+{
+    $courseExpr = "COALESCE(NULLIF(Course1, ''), NULLIF(Course2, ''), NULLIF(Course3, ''))";
+
+    return $this->db->select("{$courseExpr} AS Course, COUNT(*) AS enrollees", false)
+                    ->from('studentsignup')
+                    ->where('yearLevel', $yearlevel)
+                    ->group_by('Course')
+                    ->order_by('Course')
+                    ->get()
+                    ->result();
+}
+public function get_majors($courseDescription = null)
+{
+    $this->db->distinct();
+    $this->db->select('Major');
+    $this->db->from('course_table');
+
+    // Use the correct column name `CourseDescription` for filtering
+    if ($courseDescription) {
+        $this->db->where('CourseDescription', $courseDescription);  // Filter by the correct column
+    }
+
+    $query = $this->db->get();
+    return $query->result();  // Return the result as an array of majors
+}
+
+ public function get_courseTable()
+{
+    // Make sure you're selecting the correct column
+    $this->db->select('courseid, CourseCode, CourseDescription');
+    $this->db->from('course_table');
+    $query = $this->db->get();
+    
+    // Check if the query executed successfully
+    if ($query->num_rows() > 0) {
+        return $query->result(); // Return the result set
+    } else {
+        return []; // Return an empty array if no results
+    }
+}
+// In StudentModel.php
+public function get_sections($courseid = null, $year_level = null) {
+    $this->db->select('id, section, year_level');
+    $this->db->from('course_sections');
+    
+    // Apply filters if provided
+    if ($courseid) {
+        $this->db->where('courseid', $courseid);
+    }
+    if ($year_level) {
+        $this->db->where('year_level', $year_level);
+    }
+
+    $this->db->where('is_active', 1);  // Only fetch active sections
+    $query = $this->db->get();
+
+    return $query->result();  // Return the result as an array of sections
+}
+
+
+    public function get_year_levels()
+    {
+        $this->db->distinct();
+        $this->db->select('yearLevel');
+        $query = $this->db->get('subjects');
+        return $query->result();
+    }
+
+
 }

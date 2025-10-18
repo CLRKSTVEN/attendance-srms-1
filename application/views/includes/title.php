@@ -1,1 +1,1 @@
-<title>SRMS School Portal</title>
+<title>Attendance Portal</title>
