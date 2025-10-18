@@ -3,9 +3,9 @@ defined('BASEPATH') or exit('No direct script access allowed');
 
 // $config['base_url'] = 'https://college-my.wcmanila.edu.ph/';
 // $config['base_url'] = 'http://localhost/attendance-srms/';
-$config['base_url'] = 'http://localhost/attendance-srms/';
+$config['base_url'] = 'http://localhost/attendance/';
 $config['enable_hooks'] = TRUE;
-$config['maintenance_mode'] = False;
+$config['maintenance_mode'] = False;    
 
 date_default_timezone_set('Asia/Manila');
 
