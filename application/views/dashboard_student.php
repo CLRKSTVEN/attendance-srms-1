@@ -38,6 +38,28 @@
 
   /* Empty announcements */
   .empty-state .empty-emoji{font-size:2.25rem}
+
+  /* Profile photo alert */
+  .profile-photo-alert{
+    border:2px solid #dc3545;
+    border-radius:14px;
+    padding:18px 22px;
+    background:linear-gradient(135deg,#fff5f5,#ffe8e8);
+    color:#821414;
+    box-shadow:0 10px 24px rgba(220,53,69,.18);
+    animation:flashPulse 1.4s ease-in-out infinite;
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    text-align:center;
+  }
+  .profile-photo-alert h3{margin:0;font-weight:800;letter-spacing:.08em}
+  .profile-photo-alert p{margin:0;font-size:1rem}
+  .profile-photo-alert .btn{min-width:220px}
+  @keyframes flashPulse{
+    0%,100%{box-shadow:0 0 0 0 rgba(220,53,69,.35);background:linear-gradient(135deg,#fff5f5,#ffe8e8)}
+    50%{box-shadow:0 0 0 6px rgba(220,53,69,.05);background:linear-gradient(135deg,#ffe8e8,#ffd9d9)}
+  }
 </style>
 
 <body>
@@ -91,9 +113,51 @@ if (!$displayName && $studNo) {
 
 if (!$displayName) { $displayName = $studNo; } // fallback
 $avatarInitial = strtoupper(mb_substr(trim($displayName), 0, 1, 'UTF-8'));
+
+$changeDpUrl = base_url('Page/changeDP?id=' . urlencode($studNo));
+
+$avatar = '';
+if ($studNo) {
+    if ($this->db->table_exists('users')) {
+        $row = $this->db->select('avatar')->from('users')->where('username', $studNo)->limit(1)->get()->row();
+        if ($row && isset($row->avatar)) {
+            $avatar = trim((string)$row->avatar);
+        }
+    }
+    if ($avatar === '' && $this->db->table_exists('o_users')) {
+        $row = $this->db->select('avatar')->from('o_users')->where('username', $studNo)->limit(1)->get()->row();
+        if ($row && isset($row->avatar)) {
+            $avatar = trim((string)$row->avatar);
+        }
+    }
+}
+
+if ($avatar === '' && $this->session->userdata('avatar')) {
+    $avatar = trim((string)$this->session->userdata('avatar'));
+}
+
+$avatarPath = FCPATH . 'upload/profile/' . $avatar;
+$hasAvatar = $avatar !== '' && strtolower($avatar) !== 'avatar.png' && is_file($avatarPath);
+
+if ($hasAvatar) {
+    $this->session->set_userdata('avatar', $avatar);
+} else {
+    $this->session->set_userdata('avatar', '');
+}
 ?>
 
 
+<?php if (!$hasAvatar): ?>
+  <div class="profile-photo-alert mb-4">
+    <h3>PLEASE ADD PROFILE PHOTO</h3>
+    <p>Upload your picture to personalise your account and continue using the dashboard shortcuts.</p>
+    <div class="d-flex justify-content-center">
+      <a class="btn btn-danger btn-lg font-weight-bold" href="<?= $changeDpUrl; ?>">
+        <i class="ion ion-md-contact mr-2"></i> Upload Profile Photo
+      </a>
+    </div>
+  </div>
+<?php else: ?>
 <div class="welcome-hero mb-3">
   <div class="wh-text">
     <div class="wh-kicker">Welcome back 👋</div>
@@ -117,7 +181,7 @@ $avatarInitial = strtoupper(mb_substr(trim($displayName), 0, 1, 'UTF-8'));
     </a>
   </div>
     <div class="col-6 col-md-3 mb-3">
-    <a class="qa-card" href="<?= base_url('Page/changeDP?id' . urlencode($studNo)); ?>">
+    <a class="qa-card" href="<?= $changeDpUrl; ?>">
       <div class="qa-icon"><i class="ion ion-md-contact"></i></div>
       <div class="qa-label">Change Profile Picture</div>
     </a>
@@ -129,6 +193,7 @@ $avatarInitial = strtoupper(mb_substr(trim($displayName), 0, 1, 'UTF-8'));
     </a>
   </div>
 </div>
+<?php endif; ?>
 
 <?php if (isset($is_flagged) && $is_flagged && isset($flag_details)): ?>
   <div class="alert alert-warning text-center" data-toggle="modal" data-target="#flagModal"
