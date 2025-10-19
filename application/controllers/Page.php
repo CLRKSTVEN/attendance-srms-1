@@ -6249,7 +6249,12 @@ $updatedData = [
         ];
 
         // Insert data into the database
-        $this->CourseSectionModel->addSection($sectionData);
+        $inserted = $this->CourseSectionModel->addSection($sectionData);
+        if ($inserted) {
+            $this->session->set_flashdata('success', 'Section added successfully.');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to add the section. Please try again.');
+        }
         redirect('Page/manageSections');
 		} else {
 			// Rare direct GET access to addSection: reload manage sections with data
@@ -6279,7 +6284,12 @@ $updatedData = [
             ];
 
             // Update the section in the database
-            $this->CourseSectionModel->updateSection($id, $sectionData);
+            $updated = $this->CourseSectionModel->updateSection($id, $sectionData);
+            if ($updated) {
+                $this->session->set_flashdata('success', 'Section updated successfully.');
+            } else {
+                $this->session->set_flashdata('error', 'Failed to update the section. Please try again.');
+            }
             redirect('Page/manageSections');
 		} else {
 			// Fetch section by ID for pre-filled form
@@ -6300,7 +6310,12 @@ $updatedData = [
 
     // Delete Section
     public function deleteSection($id) {
-        $this->CourseSectionModel->deleteSection($id);
+        $deleted = $this->CourseSectionModel->deleteSection($id);
+        if ($deleted) {
+            $this->session->set_flashdata('success', 'Section deleted successfully.');
+        } else {
+            $this->session->set_flashdata('error', 'Failed to delete the section. Please try again.');
+        }
         redirect('Page/manageSections');
     }
 }

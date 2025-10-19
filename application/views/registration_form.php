@@ -50,7 +50,7 @@
                          pattern="[A-Za-z0-9\-]+"
                          title="Use letters, numbers, and hyphen only."
                          required>
-                  <small class="form-text text-muted">This will be your username. make sure to match to your school id.</small>
+                  <small class="form-text text-muted">This will be your username. make sure to match it to your school id.</small>
                 </div>
               </div>
               <input type="hidden" name="nationality" value="Filipino">
@@ -108,25 +108,16 @@
 
              
 
-              <!-- Academic (Year Level + Section) (6 + 6 = 12) -->
+              <!-- Academic (Course + Year + Section) -->
               <div class="row">
-                <div class="col-sm-6 form-group">
+                <div class="col-sm-4 form-group">
                   <label for="course1">Course/Program <span style="color:red;">*</span></label>
                   <select name="Course1" id="course1" class="form-control" required>
                     <option value="">Select Course</option>
-                    <?php foreach ($course as $row) { echo '<option value="'.$row->CourseDescription.'">'.$row->CourseDescription.'</option>'; } ?>
+                    <?php foreach ($course as $row) { echo '<option value="'.htmlspecialchars($row->CourseDescription, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($row->CourseDescription, ENT_QUOTES, 'UTF-8').'</option>'; } ?>
                   </select>
                 </div>
-                <div class="col-sm-6 form-group">
-                  <label for="major1">Major</label>
-                  <select name="Major1" id="major1" class="form-control">
-                    <option value="">Select Major</option>
-                  </select>
-                </div>
-                                </div>
-
-              <div class="row">
-                <div class="col-sm-6 form-group">
+                <div class="col-sm-4 form-group">
                   <label for="yearLevel">Year Level <span style="color:red;">*</span></label>
                   <select class="form-control" name="yearLevel" id="yearLevel" required>
                     <option value="">Select Year Level</option>
@@ -137,8 +128,7 @@
                   </select>
                   <small class="text-muted d-block mt-1">Format: 1st / 2nd / 3rd / 4th</small>
                 </div>
-
-                <div class="col-sm-6 form-group">
+                <div class="col-sm-4 form-group">
                   <label for="section">Section <span style="color:red;">*</span></label>
                   <select class="form-control" name="section" id="section" required>
                     <option value="">Select Section</option>
@@ -147,6 +137,7 @@
                   <small class="text-muted d-block mt-1">Sections depend on Course/Program &amp; Year Level.</small>
                 </div>
               </div>
+              <input type="hidden" name="Major1" id="major1">
 
      
               <!-- reCAPTCHA + Submit -->
@@ -178,26 +169,60 @@
   <!-- Courses → Majors -->
   <script>
     $(function () {
-      function hook(courseSel, majorSel){
-        $(courseSel).on('change', function(){
+      function extractFirstMajor(optionsHtml) {
+        var value = '';
+        if (optionsHtml) {
+          var container = document.createElement('div');
+          container.innerHTML = '<select>' + optionsHtml + '</select>';
+          var options = container.querySelectorAll('option');
+          for (var i = 0; i < options.length; i++) {
+            var optionValue = (options[i].value || '').trim();
+            if (optionValue !== '') {
+              value = options[i].value;
+              break;
+            }
+          }
+        }
+        return value;
+      }
+
+      function hookCourseToMajor(courseSelector, hiddenSelector) {
+        var $course = $(courseSelector);
+        var $hidden = $(hiddenSelector);
+        if (!$course.length || !$hidden.length) {
+          return;
+        }
+
+        $course.on('change', function () {
           var course = $(this).val();
-          if (course) {
-            $.post('<?= base_url("Registration/getMajorsByCourse") ?>', {course: course})
-              .done(function(html){ $(majorSel).html(html); })
-              .fail(function(){ alert('Failed to fetch majors. Please try again.'); });
-          } else {
-            $(majorSel).html('<option value="">Select Major</option>');
+
+          var finalize = function () {
+            if (courseSelector === '#course1') {
+              reloadSections();
+            }
+          };
+
+          if (!course) {
+            $hidden.val('');
+            finalize();
+            return;
           }
 
-          // If the course1 (primary program) changed and we already have a Year Level, refresh Sections too
-          if (courseSel === '#course1') {
-            reloadSections();
-          }
+          $.post('<?= base_url("Registration/getMajorsByCourse") ?>', { course: course })
+            .done(function (html) {
+              var majorValue = extractFirstMajor(html);
+              $hidden.val(majorValue);
+            })
+            .fail(function () {
+              window.alert('Failed to fetch majors. Please try again.');
+              $hidden.val('');
+            })
+            .always(finalize);
         });
       }
-      hook('#course1','#major1');
-      hook('#course2','#major2');
-      hook('#course3','#major3');
+
+      hookCourseToMajor('#course1', '#major1');
+      $('#course1').trigger('change');
     });
   </script>
 
