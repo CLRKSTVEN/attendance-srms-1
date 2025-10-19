@@ -6180,25 +6180,29 @@ public function editSignup($id = null)
     // Check if form is submitted
     if ($this->input->post('submit')) {
         // Collect form data, ensuring to update course and major fields properly
-        $updatedData = [
-            'StudentNumber' => $this->input->post('StudentNumber'),
-            'FirstName'     => $this->input->post('FirstName'),
-            'MiddleName'    => $this->input->post('MiddleName'),
-            'LastName'      => $this->input->post('LastName'),
-            'Sex'           => $this->input->post('Sex'),
-            'CivilStatus'   => $this->input->post('CivilStatus'),
-            'BirthDate'     => $this->input->post('birthDate'),
-            'Age'           => $this->input->post('Age'),
-            'email'         => $this->input->post('email'),
-            'Course1'       => $this->input->post('Course1'),
-            'Course2'       => $this->input->post('Course2'),
-            'Course3'       => $this->input->post('Course3'),
-            'Major1'        => $this->input->post('Major1'),
-            'Major2'        => $this->input->post('Major2'),
-            'Major3'        => $this->input->post('Major3'),
-            'yearLevel'     => $this->input->post('YearLevel'),
-            'section'       => $this->input->post('Section'),
-        ];
+$updatedData = [
+    'StudentNumber' => $this->input->post('StudentNumber'),
+    'FirstName'     => $this->input->post('FirstName'),
+    'MiddleName'    => $this->input->post('MiddleName'),
+    'LastName'      => $this->input->post('LastName'),
+    'Sex'           => $this->input->post('Sex'),
+    'CivilStatus'   => $this->input->post('CivilStatus'),
+    'BirthDate'     => $this->input->post('birthDate'),
+    'Age'           => $this->input->post('Age'),
+    'email'         => $this->input->post('email'),
+    'Course1'       => $this->input->post('Course1'),
+    'Course2'       => $this->input->post('Course2'),
+    'Course3'       => $this->input->post('Course3'),
+    'Major1'        => $this->input->post('Major1'),
+    'Major2'        => $this->input->post('Major2'),
+    'Major3'        => $this->input->post('Major3'),
+    'yearLevel'     => $this->input->post('YearLevel'),
+    'section'       => $this->input->post('Section'),
+    'Province'      => $this->input->post('Province'),
+    'City'          => $this->input->post('City'),
+    'Brgy'          => $this->input->post('Brgy'),
+    'Sitio'         => $this->input->post('Sitio'),
+];
 
         // Update the student record in the database
         $this->StudentModel->updatestudentsignup($id, $updatedData);

@@ -2693,11 +2693,10 @@ public function SectionCounts($sy, $sem, $course = null, $major = null)
 		}
 	}
 
-
 public function getstudentsignupbyId($StudentNumber)
 {
     $this->db->select('StudentNumber, FirstName, MiddleName, LastName, Sex, CivilStatus, birthDate, Age, contactNo, email, 
-                        Course1, Course2, Course3, Major1, Major2, Major3, yearLevel, section');
+                       Course1, Course2, Course3, Major1, Major2, Major3, yearLevel, section, Province, City, Brgy, Sitio');
     $this->db->from('studentsignup');
     $this->db->where('StudentNumber', $StudentNumber);
     $query = $this->db->get();

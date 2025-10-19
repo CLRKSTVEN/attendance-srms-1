@@ -181,26 +181,24 @@ $sitioVal    = $pickField(['Sitio', 'sitio', 'SitioPresent', 'sitioPresent']);
 <input type="text" class="form-control" name="contactNo" value="<?= isset($data->contactNo) ? $data->contactNo : ''; ?>">
                                       </div>
 
-                                      <!-- Birth Date / Age -->
-                                      <div class="form-group">
-                                          <label class="label-req">Birth Date</label>
-                                          <input type="date" name="birthDate" id="bday" class="form-control"
-       onchange="calculateAge('bday','resultBday')" required value="<?= isset($data->birthDate) ? $data->birthDate : ''; ?>">
-                                      </div>
-                                      <div class="form-group">
-                                          <label class="label-req">Age</label>
-<input type="text" name="Age" id="resultBday" class="form-control" readonly required value="<?= isset($data->age) ? $data->age : ''; ?>">
-                                      </div>
+                                 <!-- Birth Date / Age -->
+<div class="form-group">
+    <label class="label-req">Birth Date</label>
+    <input type="date" name="birthDate" id="bday" class="form-control"
+    onchange="calculateAge('bday','resultBday')" required value="<?= isset($data->birthDate) ? $data->birthDate : ''; ?>">
+</div>
+<div class="form-group">
+    <label class="label-req">Age</label>
+    <input type="text" name="Age" id="resultBday" class="form-control" readonly required value="<?= isset($data->Age) ? $data->Age : ''; ?>">
+</div>
+
 
                                       <!-- Address Fields -->
                                       <div class="span-4"><h6 class="section-title">Address</h6></div>
 <div class="form-group">
     <label class="label-req" for="province">Province</label>
     <select id="province" name="Province" class="form-control" required>
-        <!-- Retain the selected Province -->
-        <option value="<?= htmlspecialchars($provinceVal, ENT_QUOTES, 'UTF-8'); ?>" <?= $provinceVal ? 'selected' : ''; ?>>
-            <?= htmlspecialchars($provinceVal, ENT_QUOTES, 'UTF-8'); ?>
-        </option>
+        <option value="">Select Province</option>
         <?php foreach ($provinces as $province): ?>
             <option value="<?= htmlspecialchars($province->Province, ENT_QUOTES, 'UTF-8'); ?>" <?= ($province->Province == $provinceVal) ? 'selected' : ''; ?>>
                 <?= htmlspecialchars($province->Province, ENT_QUOTES, 'UTF-8'); ?>
@@ -210,25 +208,31 @@ $sitioVal    = $pickField(['Sitio', 'sitio', 'SitioPresent', 'sitioPresent']);
 </div>
 <div class="form-group">
     <label class="label-req" for="city">City/Municipality</label>
-    <select id="city" name="City" class="form-control" required disabled>
-        <!-- Retain the selected City -->
-        <option value="<?= htmlspecialchars($cityVal, ENT_QUOTES, 'UTF-8'); ?>" <?= $cityVal ? 'selected' : ''; ?>>
-            <?= htmlspecialchars($cityVal, ENT_QUOTES, 'UTF-8'); ?>
-        </option>
+    <select id="city" name="City" class="form-control" required>
+        <option value="">Select City/Municipality</option>
+        <?php foreach ($cities as $city): ?>
+            <option value="<?= htmlspecialchars($city->City, ENT_QUOTES, 'UTF-8'); ?>" <?= ($city->City == $cityVal) ? 'selected' : ''; ?>>
+                <?= htmlspecialchars($city->City, ENT_QUOTES, 'UTF-8'); ?>
+            </option>
+        <?php endforeach; ?>
     </select>
 </div>
 <div class="form-group">
     <label class="label-req" for="barangay">Barangay</label>
-    <select id="barangay" name="Brgy" class="form-control" required disabled>
-        <!-- Retain the selected Barangay -->
-        <option value="<?= htmlspecialchars($brgyVal, ENT_QUOTES, 'UTF-8'); ?>" <?= $brgyVal ? 'selected' : ''; ?>>
-            <?= htmlspecialchars($brgyVal, ENT_QUOTES, 'UTF-8'); ?>
-        </option>
+    <select id="barangay" name="Brgy" class="form-control" required>
+        <option value="">Select Barangay</option>
+        <?php foreach ($barangays as $brgy): ?>
+            <option value="<?= htmlspecialchars($brgy->Brgy, ENT_QUOTES, 'UTF-8'); ?>" <?= ($brgy->Brgy == $brgyVal) ? 'selected' : ''; ?>>
+                <?= htmlspecialchars($brgy->Brgy, ENT_QUOTES, 'UTF-8'); ?>
+            </option>
+        <?php endforeach; ?>
     </select>
-</div><div class="form-group">
+</div>
+<div class="form-group">
     <label for="sitio">Sitio</label>
     <input type="text" id="sitio" class="form-control" name="Sitio" placeholder="Sitio" value="<?= htmlspecialchars($sitioVal, ENT_QUOTES, 'UTF-8'); ?>">
 </div>
+
 
                                     </div><!-- /.form-grid -->
 
