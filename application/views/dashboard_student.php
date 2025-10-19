@@ -187,7 +187,7 @@ if ($hasAvatar) {
     </a>
   </div>
   <div class="col-6 col-md-3 mb-3">
-    <a class="qa-card" href="<?= base_url('Login/logout'); ?>">
+    <a class="qa-card logout-confirm" href="<?= base_url('Login/logout'); ?>">
       <div class="qa-icon"><i class="mdi mdi-logout-variant"></i></div>
       <div class="qa-label">Logout</div>
     </a>

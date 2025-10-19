@@ -202,15 +202,20 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
     </ul>
 </li>
 
-            <!-- Change Password (keep visible) -->
             <li>
-                <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                    <span> Change Password </span>
+                <a href="javascript: void(0);" class="waves-effect">
+                    <i class="ion ion-md-settings"></i>
+                    <span> User Settings </span>
+                    <span class="menu-arrow"></span>
                 </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                    <li><a href="<?= base_url('Page/changeDP?id=' . urlencode($this->session->userdata('username'))); ?>">Change Profile Picture</a></li>
+
+                    <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
+                </ul>
             </li>
    <li>
-                <a href="<?= base_url('Login/logout'); ?>" class="waves-effect">
+                <a href="<?= base_url('Login/logout'); ?>" class="waves-effect logout-confirm">
                     <i class="ion bi bi-box-arrow-right"></i>
                     <span> Logout </span>
                 </a>
@@ -315,10 +320,15 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                     </li>
 
                     <li>
-                        <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                            <span> Change Password </span>
+                        <a href="javascript: void(0);" class="waves-effect">
+                            <i class="ion ion-md-settings"></i>
+                            <span> User Settings </span>
+                            <span class="menu-arrow"></span>
                         </a>
+                        <ul class="nav-second-level" aria-expanded="false">
+                            <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
+                            <li><a href="<?= base_url('Page/changeDP?id=' . urlencode($this->session->userdata('username'))); ?>">Change Profile Picture</a></li>
+                        </ul>
                     </li>
 
                 </ul>
@@ -453,10 +463,15 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
 
 
                     <li>
-                        <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                            <span> Change Password </span>
+                        <a href="javascript: void(0);" class="waves-effect">
+                            <i class="ion ion-md-settings"></i>
+                            <span> User Settings </span>
+                            <span class="menu-arrow"></span>
                         </a>
+                        <ul class="nav-second-level" aria-expanded="false">
+                            <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
+                            <li><a href="<?= base_url('Page/changeDP?id=' . urlencode($this->session->userdata('username'))); ?>">Change Profile Picture</a></li>
+                        </ul>
                     </li>
 
                 </ul>
@@ -1153,14 +1168,20 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
             </li>
 
             <li>
-                <a href="<?= base_url('Page/changepassword'); ?>" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                    <span> Change Password </span>
+                <a href="javascript: void(0);" class="waves-effect">
+                    <i class="ion ion-md-settings"></i>
+                    <span> User Settings </span>
+                    <span class="menu-arrow"></span>
                 </a>
+                <ul class="nav-second-level" aria-expanded="false">
+                                        <li><a href="<?= base_url('Page/changeDP?id=' . urlencode($this->session->userdata('username'))); ?>">Change Profile Picture</a></li>
+
+                    <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
+                </ul>
             </li>
 
             <li>
-                <a href="<?= base_url('Login/logout'); ?>" class="waves-effect">
+                <a href="<?= base_url('Login/logout'); ?>" class="waves-effect logout-confirm">
                     <i class="ion bi bi-box-arrow-right"></i>
                     <span> Logout </span>
                 </a>
@@ -1739,3 +1760,69 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
     <!-- Sidebar -left -->
 
 </div>
+
+<script>
+(function () {
+    if (window.__logoutConfirmInitialized) {
+        return;
+    }
+    window.__logoutConfirmInitialized = true;
+
+    function handleLogoutClick(event) {
+        event.preventDefault();
+        var targetUrl = this.getAttribute('href');
+        var proceed = function () {
+            window.location.href = targetUrl;
+        };
+
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            window.Swal.fire({
+                title: 'Log out?',
+                text: 'You will be logged out of your account.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, log out',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#348cd4',
+                cancelButtonColor: '#6c757d'
+            }).then(function (result) {
+                var confirmed = false;
+                if (result) {
+                    if (typeof result.isConfirmed !== 'undefined') {
+                        confirmed = result.isConfirmed;
+                    } else if (typeof result.value !== 'undefined') {
+                        confirmed = !!result.value;
+                    } else if (result === true) {
+                        confirmed = true;
+                    }
+                }
+                if (confirmed) {
+                    proceed();
+                }
+            });
+        } else if (window.confirm('Are you sure you want to log out?')) {
+            proceed();
+        }
+    }
+
+    function bindLogoutConfirm() {
+        var links = document.querySelectorAll('.logout-confirm');
+        if (!links.length) {
+            return;
+        }
+        Array.prototype.forEach.call(links, function (link) {
+            if (link.__logoutConfirmBound) {
+                return;
+            }
+            link.__logoutConfirmBound = true;
+            link.addEventListener('click', handleLogoutClick);
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', bindLogoutConfirm);
+    } else {
+        bindLogoutConfirm();
+    }
+})();
+</script>
