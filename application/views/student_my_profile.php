@@ -15,31 +15,50 @@
               max-width: 960px;
               margin: 0 auto 48px;
             }
-            .profile-section + .profile-section {
+
+            .profile-section+.profile-section {
               margin-top: 32px;
             }
+
             .profile-section h4 {
               font-weight: 600;
               font-size: 1.05rem;
               margin-bottom: 20px;
               color: #1f2937;
             }
+
             .profile-grid {
-              display: grid;
-              grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+              display: flex;
+              flex-wrap: wrap;
               gap: 18px 20px;
             }
+
             .profile-grid .form-group {
+              flex: 1 1 260px;
+              min-width: 220px;
               margin-bottom: 0;
             }
+
             .profile-grid small {
               margin-top: 6px;
               display: block;
             }
+
+            .page-title-box .title-block {
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+            }
+
             @media (max-width: 767.98px) {
               .profile-wrapper {
                 max-width: 100%;
                 margin: 0 0 36px;
+              }
+
+              .profile-grid .form-group {
+                flex-basis: 100%;
+                min-width: 100%;
               }
             }
           </style>
@@ -62,8 +81,11 @@
             $birthDate = '';
           }
           $sexValue   = trim((string)($profile->Sex ?? ''));
+          $civilStatus = trim((string)($profile->CivilStatus ?? ''));
           $contactNo  = trim((string)($profile->contactNo ?? ''));
           $email      = trim((string)($account->email ?? $profile->email ?? ''));
+          $birthPlace = trim((string)($profile->BirthPlace ?? ''));
+          $ageValue   = trim((string)($profile->age ?? ''));
 
           $currentCourseDesc = trim((string)($currentCourseDesc ?? ''));
           $currentYear       = trim((string)($currentYear ?? ''));
@@ -71,87 +93,100 @@
           $nationality       = trim((string)($profile->nationality ?? 'Filipino'));
           $working           = trim((string)($profile->working ?? 'No'));
           $vaccStat          = trim((string)($profile->VaccStat ?? ''));
+          $sitioValue        = trim((string)($profile->sitio ?? $profile->Sitio ?? ''));
+          $brgyValue         = trim((string)($profile->brgy ?? $profile->Brgy ?? ''));
+          $cityValue         = trim((string)($profile->city ?? $profile->City ?? ''));
+          $provinceValue     = trim((string)($profile->province ?? $profile->Province ?? ''));
+          $currentProvince   = trim((string)($currentProvince ?? $provinceValue));
+          $currentCity       = trim((string)($currentCity ?? $cityValue));
+          $currentBrgy       = trim((string)($currentBrgy ?? $brgyValue));
+          $civilStatusOptions = isset($civilStatusOptions) && is_array($civilStatusOptions) ? $civilStatusOptions : ['Single', 'Married', 'Widowed', 'Separated', 'Divorced'];
+          if ($civilStatus !== '' && !in_array($civilStatus, $civilStatusOptions, true)) {
+            $civilStatusOptions[] = $civilStatus;
+          }
+
+          $provincesList   = isset($provincesList) && is_array($provincesList) ? $provincesList : [];
+          $citiesList      = isset($citiesList) && is_array($citiesList) ? $citiesList : [];
+          $barangaysList   = isset($barangaysList) && is_array($barangaysList) ? $barangaysList : [];
+
+          $pageTitle       = isset($pageTitle) && $pageTitle !== '' ? (string)$pageTitle : 'My Profile';
+          $pageDescription = isset($pageDescription) && $pageDescription !== '' ? (string)$pageDescription : 'Update your personal and academic details.';
+          $backUrl         = isset($backUrl) ? (string)$backUrl : base_url('Page/student');
+          $backLabel       = isset($backLabel) && $backLabel !== '' ? (string)$backLabel : 'Back to Dashboard';
+          $submitLabel     = isset($submitLabel) && $submitLabel !== '' ? (string)$submitLabel : 'Save Changes';
           ?>
 
           <div class="row">
             <div class="col-12">
               <div class="page-title-box d-flex justify-content-between align-items-center flex-wrap">
-                <div>
-                  <h4 class="page-title mb-1">My Profile</h4>
-                  <p class="text-muted mb-0">Update your personal and academic details.</p>
+                <div class="title-block">
+                  <h4 class="page-title mb-1"><?= htmlspecialchars($pageTitle, ENT_QUOTES, 'UTF-8'); ?></h4>
+                  <p class="text-muted mb-0"><?= htmlspecialchars($pageDescription, ENT_QUOTES, 'UTF-8'); ?></p>
                 </div>
-                <div>
-                  <a href="<?= base_url('Page/student'); ?>" class="btn btn-outline-secondary btn-sm">
-                    <i class="mdi mdi-arrow-left"></i> Back to Dashboard
-                  </a>
-                </div>
+                <?php if ($backUrl !== ''): ?>
+                  <div>
+                    <a href="<?= htmlspecialchars($backUrl, ENT_QUOTES, 'UTF-8'); ?>" class="btn btn-outline-secondary btn-sm">
+                      <i class="mdi mdi-arrow-left"></i> <?= htmlspecialchars($backLabel, ENT_QUOTES, 'UTF-8'); ?>
+                    </a>
+                  </div>
+                <?php endif; ?>
               </div>
             </div>
           </div>
-
-          <?php if (!empty($flashSuccess)): ?>
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-              <?= htmlspecialchars($flashSuccess, ENT_QUOTES, 'UTF-8'); ?>
-              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-          <?php endif; ?>
-
-          <?php if (!empty($flashDanger)): ?>
-            <div class="alert alert-danger alert-dismissible fade show" role="alert">
-              <?= htmlspecialchars($flashDanger, ENT_QUOTES, 'UTF-8'); ?>
-              <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-          <?php endif; ?>
 
           <div class="row">
             <div class="col-lg-12">
               <div class="card shadow-sm border-0">
                 <div class="card-body profile-wrapper">
-                  <form method="post" autocomplete="off">
+                  <form method="post" autocomplete="off" class="parsley-examples">
                     <div class="profile-section">
                       <h4>Personal Information</h4>
                       <div class="profile-grid">
                         <div class="form-group">
                           <label for="StudentNumber">Student ID / Number <span class="text-danger">*</span></label>
                           <input type="text"
-                                 id="StudentNumber"
-                                 class="form-control"
-                                 name="StudentNumber"
-                                 value="<?= htmlspecialchars($studentNumber, ENT_QUOTES, 'UTF-8'); ?>"
-                                 readonly
-                                 required>
-                          <small class="text-muted">This is your username and should match your school ID.</small>
+                            id="StudentNumber"
+                            class="form-control"
+                            name="StudentNumber"
+                            value="<?= htmlspecialchars($studentNumber, ENT_QUOTES, 'UTF-8'); ?>"
+                            placeholder="Student ID"
+                            minlength="4"
+                            maxlength="20"
+                            pattern="[A-Za-z0-9\-]+"
+                            title="Use letters, numbers, and hyphen only."
+                            readonly
+                            required>
                         </div>
                       </div>
 
                       <input type="hidden" name="nationality" value="<?= htmlspecialchars($nationality, ENT_QUOTES, 'UTF-8'); ?>">
                       <input type="hidden" name="working" value="<?= htmlspecialchars($working, ENT_QUOTES, 'UTF-8'); ?>">
                       <input type="hidden" name="VaccStat" value="<?= htmlspecialchars($vaccStat, ENT_QUOTES, 'UTF-8'); ?>">
+                      <input type="hidden" name="Major1" id="major1" value="<?= htmlspecialchars($bundle->enrollment->Major ?? $bundle->profile->Major ?? '', ENT_QUOTES, 'UTF-8'); ?>">
 
                       <div class="profile-grid">
                         <div class="form-group">
                           <label for="FirstName">First Name <span class="text-danger">*</span></label>
                           <input type="text" id="FirstName" class="form-control" name="FirstName" style="text-transform: uppercase;"
-                                 value="<?= htmlspecialchars($firstName, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            placeholder="First Name"
+                            value="<?= htmlspecialchars($firstName, ENT_QUOTES, 'UTF-8'); ?>" required>
                         </div>
                         <div class="form-group">
                           <label for="MiddleName">Middle Name</label>
                           <input type="text" id="MiddleName" class="form-control" name="MiddleName" style="text-transform: uppercase;"
-                                 value="<?= htmlspecialchars($middleName, ENT_QUOTES, 'UTF-8'); ?>">
+                            placeholder="Middle Name"
+                            value="<?= htmlspecialchars($middleName, ENT_QUOTES, 'UTF-8'); ?>">
                         </div>
                         <div class="form-group">
                           <label for="LastName">Last Name <span class="text-danger">*</span></label>
                           <input type="text" id="LastName" class="form-control" name="LastName" style="text-transform: uppercase;"
-                                 value="<?= htmlspecialchars($lastName, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            placeholder="Last Name"
+                            value="<?= htmlspecialchars($lastName, ENT_QUOTES, 'UTF-8'); ?>" required>
                         </div>
                         <div class="form-group">
                           <label for="nameExtn">Name Extn.</label>
                           <input type="text" id="nameExtn" class="form-control" name="nameExtn" style="text-transform: uppercase;"
-                                 value="<?= htmlspecialchars($nameExtn, ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Jr., Sr.">
+                            value="<?= htmlspecialchars($nameExtn, ENT_QUOTES, 'UTF-8'); ?>" placeholder="e.g. Jr., Sr.">
                         </div>
                       </div>
 
@@ -171,21 +206,50 @@
                         <div class="form-group">
                           <label for="bday">Birth Date <span class="text-danger">*</span></label>
                           <input type="date" id="bday" class="form-control" name="birthDate" onchange="submitBday()"
-                                 value="<?= htmlspecialchars($birthDate, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            value="<?= htmlspecialchars($birthDate, ENT_QUOTES, 'UTF-8'); ?>" required>
                         </div>
                         <div class="form-group">
                           <label for="email">E-mail Address <span class="text-danger">*</span></label>
                           <input type="email" id="email" class="form-control" name="email"
-                                 value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            placeholder="name@example.com"
+                            value="<?= htmlspecialchars($email, ENT_QUOTES, 'UTF-8'); ?>" required>
                         </div>
                         <div class="form-group">
                           <label for="contactNo">Mobile No. <span class="text-danger">*</span></label>
                           <input type="text" id="contactNo" class="form-control" name="contactNo"
-                                 value="<?= htmlspecialchars($contactNo, ENT_QUOTES, 'UTF-8'); ?>" required>
+                            placeholder="09XXXXXXXXX"
+                            value="<?= htmlspecialchars($contactNo, ENT_QUOTES, 'UTF-8'); ?>" required>
                         </div>
-                        <input type="hidden" id="resultBday" class="form-control" name="age" value="<?= htmlspecialchars($profile->age ?? '', ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                        <input type="hidden" id="resultBday" class="form-control" name="age" value="<?= htmlspecialchars($ageValue, ENT_QUOTES, 'UTF-8'); ?>" readonly required autocomplete="off">
+                      </div>
+
+                      <div class="profile-grid">
+                        <div class="form-group">
+                          <label for="CivilStatus">Civil Status</label>
+                          <select class="form-control" id="CivilStatus" name="CivilStatus">
+                            <option value=""></option>
+                            <?php foreach ($civilStatusOptions as $status): ?>
+                              <?php $trimStatus = trim((string)$status); ?>
+                              <option value="<?= htmlspecialchars($trimStatus, ENT_QUOTES, 'UTF-8'); ?>" <?= strcasecmp($civilStatus, $trimStatus) === 0 ? 'selected' : ''; ?>>
+                                <?= htmlspecialchars($trimStatus, ENT_QUOTES, 'UTF-8'); ?>
+                              </option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="BirthPlace">Birth Place</label>
+                          <input type="text" id="BirthPlace" class="form-control" name="BirthPlace"
+                            placeholder="City / Province"
+                            value="<?= htmlspecialchars($birthPlace, ENT_QUOTES, 'UTF-8'); ?>">
+                        </div>
+                        <div class="form-group">
+                          <label for="ageDisplay">Age</label>
+                          <input type="text" id="ageDisplay" class="form-control" value="<?= htmlspecialchars($ageValue, ENT_QUOTES, 'UTF-8'); ?>" readonly>
+                        </div>
                       </div>
                     </div>
+
+
 
                     <div class="profile-section">
                       <h4>Academic Information</h4>
@@ -226,10 +290,72 @@
                         </div>
                       </div>
                     </div>
-
+                    <div class="profile-section">
+                      <h4>Address Information</h4>
+                      <div class="profile-grid">
+                        <div class="form-group">
+                          <label for="sitio">Street / Sitio</label>
+                          <input type="text" id="sitio" class="form-control" name="sitio"
+                            placeholder="Street / Sitio"
+                            value="<?= htmlspecialchars($sitioValue, ENT_QUOTES, 'UTF-8'); ?>">
+                        </div>
+                        <div class="form-group">
+                          <label for="province">Province</label>
+                          <select id="province" name="province" class="form-control" data-current="<?= htmlspecialchars($currentProvince, ENT_QUOTES, 'UTF-8'); ?>">
+                            <option value="">Select Province</option>
+                            <?php foreach ($provincesList as $provinceObj):
+                              $provName = trim((string)($provinceObj->Province ?? ''));
+                              if ($provName === '') {
+                                continue;
+                              }
+                              $selected = (strcasecmp($currentProvince, $provName) === 0) ? 'selected' : '';
+                            ?>
+                              <option value="<?= htmlspecialchars($provName, ENT_QUOTES, 'UTF-8'); ?>" <?= $selected; ?>>
+                                <?= htmlspecialchars($provName, ENT_QUOTES, 'UTF-8'); ?>
+                              </option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="city">City / Municipality</label>
+                          <select id="city" name="city" class="form-control" data-current="<?= htmlspecialchars($currentCity, ENT_QUOTES, 'UTF-8'); ?>">
+                            <option value="">Select City/Municipality</option>
+                            <?php foreach ($citiesList as $cityObj):
+                              $cityName = trim((string)($cityObj->City ?? ''));
+                              if ($cityName === '') {
+                                continue;
+                              }
+                              $selected = (strcasecmp($currentCity, $cityName) === 0) ? 'selected' : '';
+                            ?>
+                              <option value="<?= htmlspecialchars($cityName, ENT_QUOTES, 'UTF-8'); ?>" <?= $selected; ?>>
+                                <?= htmlspecialchars($cityName, ENT_QUOTES, 'UTF-8'); ?>
+                              </option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                        <div class="form-group">
+                          <label for="barangay">Barangay</label>
+                          <select id="barangay" name="brgy" class="form-control" data-current="<?= htmlspecialchars($currentBrgy, ENT_QUOTES, 'UTF-8'); ?>">
+                            <option value="">Select Barangay</option>
+                            <?php foreach ($barangaysList as $brgyObj):
+                              $brgyName = trim((string)($brgyObj->Brgy ?? ''));
+                              if ($brgyName === '') {
+                                continue;
+                              }
+                              $selected = (strcasecmp($currentBrgy, $brgyName) === 0) ? 'selected' : '';
+                            ?>
+                              <option value="<?= htmlspecialchars($brgyName, ENT_QUOTES, 'UTF-8'); ?>" <?= $selected; ?>>
+                                <?= htmlspecialchars($brgyName, ENT_QUOTES, 'UTF-8'); ?>
+                              </option>
+                            <?php endforeach; ?>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                    <br>
                     <div class="text-right">
                       <button type="submit" class="btn btn-primary">
-                        <i class="mdi mdi-content-save-outline"></i> Save Changes
+                        <i class="mdi mdi-content-save-outline"></i> <?= htmlspecialchars($submitLabel, ENT_QUOTES, 'UTF-8'); ?>
                       </button>
                     </div>
                   </form>
@@ -245,15 +371,50 @@
   </div>
 
   <script src="<?= base_url(); ?>assets/js/vendor.min.js"></script>
+  <script src="<?= base_url(); ?>assets/libs/sweetalert2/sweetalert2.min.js"></script>
+  <script>
+    (function() {
+      var successMessage = <?= json_encode($flashSuccess ?? ''); ?>;
+      var dangerMessage = <?= json_encode($flashDanger ?? ''); ?>;
+
+      document.addEventListener('DOMContentLoaded', function() {
+        if (successMessage) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Profile Saved',
+            text: successMessage,
+            confirmButtonColor: '#2563eb',
+            confirmButtonText: 'OK'
+          });
+        } else if (dangerMessage) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Something went wrong',
+            text: dangerMessage,
+            confirmButtonColor: '#dc2626',
+            confirmButtonText: 'Try Again'
+          });
+        }
+      });
+    })();
+  </script>
   <script>
     function submitBday() {
       var input = document.getElementById('bday');
       var target = document.getElementById('resultBday');
-      if (!input || !target) { return; }
+      if (!input || !target) {
+        return;
+      }
       var value = input.value;
-      if (!value) { target.value = ''; return; }
+      if (!value) {
+        target.value = '';
+        return;
+      }
       var birth = new Date(value);
-      if (isNaN(birth.getTime())) { target.value = ''; return; }
+      if (isNaN(birth.getTime())) {
+        target.value = '';
+        return;
+      }
       var today = new Date();
       var age = today.getFullYear() - birth.getFullYear();
       var m = today.getMonth() - birth.getMonth();
@@ -261,6 +422,10 @@
         age--;
       }
       target.value = age >= 0 ? age : '';
+      var display = document.getElementById('ageDisplay');
+      if (display) {
+        display.value = (age >= 0 ? age : '');
+      }
     }
   </script>
   <script>
@@ -294,7 +459,10 @@
           $section.html('<option value="">Select Section</option>');
           return;
         }
-        $.post('<?= base_url("Registration/getSectionsByCourseYear"); ?>', { course: course, yearLevel: year })
+        $.post('<?= base_url("Registration/getSectionsByCourseYear"); ?>', {
+            course: course,
+            yearLevel: year
+          })
           .done(function(html) {
             populateSections(html);
           })
@@ -316,8 +484,89 @@
 
         reloadSections();
         submitBday();
+        var ageDisplay = document.getElementById('ageDisplay');
+        var hiddenAge = document.getElementById('resultBday');
+        if (ageDisplay && hiddenAge && hiddenAge.value) {
+          ageDisplay.value = hiddenAge.value;
+        }
       });
     })(jQuery);
+  </script>
+
+  <!-- Province → City → Barangay -->
+  <script>
+    $(function() {
+      var $province = $('#province');
+      var $city = $('#city');
+      var $barangay = $('#barangay');
+      var currentProvince = ($province.data('current') || '').trim();
+      var currentCity = ($city.data('current') || '').trim();
+      var currentBrgy = ($barangay.data('current') || '').trim();
+
+      $province.on('change', function() {
+        var province = $(this).val();
+        if (province) {
+          $.post('<?= base_url("Registration/getCitiesByProvince") ?>', {
+              province: province
+            })
+            .done(function(html) {
+              $city.html(html);
+              $barangay.html('<option value="">Select Barangay</option>');
+              if (currentCity) {
+                $city.val(currentCity);
+                if ($city.val()) {
+                  $city.trigger('change');
+                }
+                currentCity = '';
+              }
+            })
+            .fail(function() {
+              alert('Failed to fetch cities. Please try again.');
+            });
+        } else {
+          $city.html('<option value="">Select City/Municipality</option>');
+          $barangay.html('<option value="">Select Barangay</option>');
+        }
+      });
+
+      $city.on('change', function() {
+        var city = $(this).val();
+        if (city) {
+          $.post('<?= base_url("Registration/getBarangaysByCity") ?>', {
+              city: city
+            })
+            .done(function(html) {
+              $barangay.html(html);
+              if (currentBrgy) {
+                $barangay.val(currentBrgy);
+                currentBrgy = '';
+              }
+            })
+            .fail(function() {
+              alert('Failed to fetch barangays. Please try again.');
+            });
+        } else {
+          $barangay.html('<option value="">Select Barangay</option>');
+        }
+      });
+
+      if (currentProvince && !$province.val()) {
+        $province.val(currentProvince);
+      }
+
+      if ($city.children('option').length <= 1 && $province.val()) {
+        $province.trigger('change');
+      } else if ($barangay.children('option').length <= 1 && currentCity) {
+        $city.trigger('change');
+      } else {
+        if (currentCity && !$city.val()) {
+          $city.val(currentCity);
+        }
+        if (currentBrgy && !$barangay.val()) {
+          $barangay.val(currentBrgy);
+        }
+      }
+    });
   </script>
 </body>
 

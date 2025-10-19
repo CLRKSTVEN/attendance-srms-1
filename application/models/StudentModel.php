@@ -909,7 +909,7 @@ function totalProfile()
 			];
 		}
 
-		$profile = $this->db->select('StudentNumber, contactNo, Sex, CivilStatus, birthDate, course, major, yearLevel')
+		$profile = $this->db->select('StudentNumber, contactNo, Sex, CivilStatus, birthDate, BirthPlace, age, course, major, yearLevel, sitio, brgy, city, province, email, nationality, working, VaccStat')
 		                    ->from('studeprofile')
 		                    ->where('StudentNumber', $studentNumber)
 		                    ->limit(1)
@@ -922,13 +922,37 @@ function totalProfile()
 				'Sex'           => '',
 				'CivilStatus'   => '',
 				'birthDate'     => '',
+				'BirthPlace'    => '',
+				'age'           => '',
 				'course'        => '',
 				'major'         => '',
 				'yearLevel'     => '',
-				'section'       => ''
+				'section'       => '',
+				'sitio'         => '',
+				'brgy'          => '',
+				'city'          => '',
+				'province'      => '',
+				'email'         => '',
+				'nationality'   => '',
+				'working'       => '',
+				'VaccStat'      => ''
 			];
 		} elseif (!property_exists($profile, 'section')) {
 			$profile->section = '';
+		}
+		foreach (['BirthPlace','age','sitio','brgy','city','province','email','nationality','working','VaccStat'] as $missingKey) {
+			if (!property_exists($profile, $missingKey)) {
+				$profile->{$missingKey} = '';
+			}
+		}
+		if (!property_exists($profile, 'course')) {
+			$profile->course = '';
+		}
+		if (!property_exists($profile, 'major')) {
+			$profile->major = '';
+		}
+		if (!property_exists($profile, 'yearLevel')) {
+			$profile->yearLevel = '';
 		}
 
 		$enrollment = $this->db->select('semstudentid, Course, Major, YearLevel, Section, Semester, SY')
@@ -1107,6 +1131,72 @@ function totalProfile()
 			}
 			if (!empty($profileSync)) {
 				$this->db->where('StudentNumber', $studentNumber)->update('studeprofile', $profileSync);
+			}
+		}
+
+		if (!empty($profileData) || !empty($enrollmentData)) {
+			$signupExists = $this->db->select('StudentNumber')
+			                         ->from('studentsignup')
+			                         ->where('StudentNumber', $studentNumber)
+			                         ->limit(1)
+			                         ->get()
+			                         ->row();
+			if ($signupExists) {
+				$signupUpdate = [];
+
+				if (!empty($profileData)) {
+					$profileToSignup = [
+						'FirstName'   => 'FirstName',
+						'MiddleName'  => 'MiddleName',
+						'LastName'    => 'LastName',
+						'nameExtn'    => 'nameExtn',
+						'Sex'         => 'Sex',
+						'birthDate'   => 'birthDate',
+						'age'         => 'age',
+						'contactNo'   => 'contactNo',
+						'email'       => 'email',
+						'CivilStatus' => 'CivilStatus',
+						'BirthPlace'  => 'BirthPlace',
+						'sitio'       => 'sitio',
+						'brgy'        => 'brgy',
+						'city'        => 'city',
+						'province'    => 'province',
+						'nationality' => 'nationality',
+						'working'     => 'working',
+						'VaccStat'    => 'VaccStat'
+					];
+					foreach ($profileToSignup as $profileKey => $signupKey) {
+						if (array_key_exists($profileKey, $profileData)) {
+							$signupUpdate[$signupKey] = $profileData[$profileKey];
+						}
+					}
+					if (array_key_exists('course', $profileData)) {
+						$signupUpdate['Course1'] = $profileData['course'];
+					}
+					if (array_key_exists('yearLevel', $profileData)) {
+						$signupUpdate['yearLevel'] = $profileData['yearLevel'];
+					}
+				}
+
+				if (!empty($enrollmentData)) {
+					if (array_key_exists('Course', $enrollmentData)) {
+						$signupUpdate['Course1'] = $enrollmentData['Course'];
+					}
+					if (array_key_exists('Major', $enrollmentData)) {
+						$signupUpdate['Major1'] = $enrollmentData['Major'];
+					}
+					if (array_key_exists('YearLevel', $enrollmentData)) {
+						$signupUpdate['yearLevel'] = $enrollmentData['YearLevel'];
+					}
+					if (array_key_exists('Section', $enrollmentData)) {
+						$signupUpdate['section'] = $enrollmentData['Section'];
+					}
+				}
+
+				if (!empty($signupUpdate)) {
+					$this->db->where('StudentNumber', $studentNumber)
+					         ->update('studentsignup', $signupUpdate);
+				}
 			}
 		}
 

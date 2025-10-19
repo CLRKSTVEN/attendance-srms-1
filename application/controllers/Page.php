@@ -1467,6 +1467,21 @@ function student()
 		$currentSection    = trim((string)($bundle->enrollment->Section ?? $bundle->profile->section ?? ''));
 		$yearLevels        = ['1st', '2nd', '3rd', '4th'];
 
+		$civilStatusOptions = ['Single', 'Married', 'Widowed', 'Separated', 'Divorced'];
+		$currentCivilStatus = trim((string)($bundle->profile->CivilStatus ?? ''));
+		if ($currentCivilStatus !== '') {
+			$already = false;
+			foreach ($civilStatusOptions as $opt) {
+				if (strcasecmp($opt, $currentCivilStatus) === 0) {
+					$already = true;
+					break;
+				}
+			}
+			if (!$already) {
+				$civilStatusOptions[] = $currentCivilStatus;
+			}
+		}
+
 		if ($this->input->method() === 'post') {
 			$form = $this->input->post(null, true);
 
@@ -1496,9 +1511,15 @@ function student()
 				'age'         => $age,
 				'contactNo'   => $contactNo,
 				'email'       => $email,
+				'CivilStatus' => trim((string)($form['CivilStatus'] ?? '')),
+				'BirthPlace'  => trim((string)($form['BirthPlace'] ?? '')),
 				'nationality' => trim((string)($form['nationality'] ?? 'Filipino')),
 				'working'     => trim((string)($form['working'] ?? 'No')),
-				'VaccStat'    => trim((string)($form['VaccStat'] ?? ''))
+				'VaccStat'    => trim((string)($form['VaccStat'] ?? '')),
+				'sitio'       => trim((string)($form['sitio'] ?? $form['Sitio'] ?? '')),
+				'brgy'        => trim((string)($form['brgy'] ?? $form['Brgy'] ?? '')),
+				'city'        => trim((string)($form['city'] ?? $form['City'] ?? '')),
+				'province'    => trim((string)($form['province'] ?? $form['Province'] ?? ''))
 			];
 
 			$courseDesc = '';
@@ -1549,25 +1570,96 @@ function student()
 					$this->session->set_userdata('email', $email);
 				}
 				$this->session->set_flashdata('success', 'Your profile was updated.');
+				redirect('Page/student');
+				return;
 			} else {
 				$this->session->set_flashdata('danger', 'We could not save your changes. Please try again.');
+				redirect('Page/myProfile');
+				return;
 			}
-
-			redirect('Page/myProfile');
-			return;
 		}
 
+		$currentProvince = trim((string)($bundle->profile->province ?? ''));
+		$currentCity     = trim((string)($bundle->profile->city ?? ''));
+
 		$data = [
-			'bundle'            => $bundle,
-			'courses'           => $courses,
-			'yearLevels'        => $yearLevels,
-			'currentCourseDesc' => $currentCourseDesc,
-			'currentYear'       => $currentYear,
-			'currentSection'    => $currentSection,
-			'sexOptions'        => ['Female', 'Male']
+			'bundle'             => $bundle,
+			'courses'            => $courses,
+			'yearLevels'         => $yearLevels,
+			'currentCourseDesc'  => $currentCourseDesc,
+			'currentYear'        => $currentYear,
+			'currentSection'     => $currentSection,
+			'sexOptions'         => ['Female', 'Male'],
+			'civilStatusOptions' => $civilStatusOptions,
+			'currentProvince'    => $currentProvince,
+			'currentCity'        => $currentCity,
+			'currentBrgy'        => trim((string)($bundle->profile->brgy ?? '')),
+			'provincesList'      => $this->StudentModel->get_provinces(),
+			'citiesList'         => ($currentProvince !== '') ? $this->StudentModel->get_cities($currentProvince) : [],
+			'barangaysList'      => ($currentCity !== '') ? $this->StudentModel->get_barangays($currentCity) : [],
+			'backUrl'            => base_url('Page/studentProfile'),
+			'backLabel'          => 'Back to Profile'
 		];
 
 		$this->load->view('student_my_profile', $data);
+	}
+
+	public function studentProfile()
+	{
+		$level = (string)$this->session->userdata('level');
+		if (!in_array($level, ['Student', 'Stude Applicant'], true)) {
+			show_error('Access Denied', 403);
+		}
+
+		$studentNumber = trim((string)$this->session->userdata('username'));
+		if ($studentNumber === '') {
+			redirect('Login');
+			return;
+		}
+
+		$this->ensure_student_profile_exists($studentNumber);
+
+		$bundle = $this->StudentModel->getMyProfileBundle($studentNumber);
+
+		$currentCourseDesc = trim((string)($bundle->enrollment->Course ?? $bundle->profile->course ?? ''));
+		$currentYear       = trim((string)($bundle->enrollment->YearLevel ?? $bundle->profile->yearLevel ?? ''));
+		$currentSection    = trim((string)($bundle->enrollment->Section ?? $bundle->profile->section ?? ''));
+
+		$profileRow = (object)[
+			'StudentNumber' => trim((string)($bundle->profile->StudentNumber ?? $bundle->account->username ?? $studentNumber)),
+			'FirstName'     => trim((string)($bundle->profile->FirstName ?? $bundle->account->fName ?? '')),
+			'MiddleName'    => trim((string)($bundle->profile->MiddleName ?? $bundle->account->mName ?? '')),
+			'LastName'      => trim((string)($bundle->profile->LastName ?? $bundle->account->lName ?? '')),
+			'nameExtn'      => trim((string)($bundle->profile->nameExtn ?? '')),
+			'Sex'           => trim((string)($bundle->profile->Sex ?? '')),
+			'CivilStatus'   => trim((string)($bundle->profile->CivilStatus ?? '')),
+			'contactNo'     => trim((string)($bundle->profile->contactNo ?? '')),
+			'birthDate'     => trim((string)($bundle->profile->birthDate ?? '')),
+			'age'           => trim((string)($bundle->profile->age ?? '')),
+			'BirthPlace'    => trim((string)($bundle->profile->BirthPlace ?? '')),
+			'email'         => trim((string)($bundle->profile->email ?? $bundle->account->email ?? '')),
+			'sitio'         => trim((string)($bundle->profile->sitio ?? '')),
+			'brgy'          => trim((string)($bundle->profile->brgy ?? '')),
+			'city'          => trim((string)($bundle->profile->city ?? '')),
+			'province'      => trim((string)($bundle->profile->province ?? ''))
+		];
+
+		$avatarPath = trim((string)($bundle->account->avatar ?? $bundle->profile->imagePath ?? ''));
+		if ($avatarPath === '') {
+			$avatarPath = 'default.png';
+		}
+
+		$data = [
+			'data'              => [$profileRow],
+			'data1'             => [(object)['avatar' => $avatarPath]],
+			'currentCourseDesc' => $currentCourseDesc,
+			'currentYear'       => $currentYear,
+			'currentSection'    => $currentSection,
+			'backUrl'           => base_url('Page/student'),
+			'editUrl'           => base_url('Page/myProfile')
+		];
+
+		$this->load->view('student_profile_view', $data);
 	}
 	public function studentsprofile2()
 	{
@@ -1614,27 +1706,182 @@ function student()
 
 	function studentSignup()
 	{
-		if ($this->session->userdata('level') === 'Stude Applicant') {
-			$id = $this->session->userdata('username');
-		} else {
-			$id = $this->input->get('id');
-			$studentNumber = $this->input->get('id');
+		$level            = (string)$this->session->userdata('level');
+		$isSelfApplicant  = ($level === 'Stude Applicant');
+		$isSelfStudent    = ($level === 'Student');
+		$studentNumberRaw = $isSelfApplicant || $isSelfStudent
+			? $this->session->userdata('username')
+			: $this->input->get('id', true);
+
+		$studentNumber = trim((string)$studentNumberRaw);
+		if ($studentNumber === '') {
+			// If no ID was supplied for staff users, fail fast.
+			if ($isSelfApplicant || $isSelfStudent) {
+				redirect('Login');
+			} else {
+				show_error('A Student Number is required to view this page.', 404);
+			}
+			return;
 		}
 
-		// Handle fallback in case $studentNumber isn't set
-		if (!isset($studentNumber)) {
-			$studentNumber = $id;
+		$this->ensure_student_profile_exists($studentNumber);
+
+		$bundle = $this->StudentModel->getMyProfileBundle($studentNumber);
+		$courses = $this->StudentModel->get_courseTable();
+		$courseLookup = [];
+		foreach ($courses as $course) {
+			$courseLookup[(int)$course->courseid] = $course;
 		}
 
-		$studentNumber = $id;
+		$currentCourseDesc = trim((string)($bundle->enrollment->Course ?? $bundle->profile->course ?? ''));
+		$currentYear       = trim((string)($bundle->enrollment->YearLevel ?? $bundle->profile->yearLevel ?? ''));
+		$currentSection    = trim((string)($bundle->enrollment->Section ?? $bundle->profile->section ?? ''));
+		$yearLevels        = ['1st', '2nd', '3rd', '4th'];
+		$civilStatusOptions = ['Single', 'Married', 'Widowed', 'Separated', 'Divorced'];
+		$currentCivil = trim((string)($bundle->profile->CivilStatus ?? ''));
+		if ($currentCivil !== '') {
+			$existsCivil = false;
+			foreach ($civilStatusOptions as $opt) {
+				if (strcasecmp($opt, $currentCivil) === 0) {
+					$existsCivil = true;
+					break;
+				}
+			}
+			if (!$existsCivil) {
+				$civilStatusOptions[] = $currentCivil;
+			}
+		}
 
-		// Prepare result array
-		$result['data'] = $this->StudentModel->studentSignup($id);
-		$result['data1'] = $this->StudentModel->profilepic($id);
-		$result['data2'] = $this->StudentModel->getStudentRequirements($studentNumber);
-		$result['student'] = $this->StudentModel->studentSignup($id);
+		if ($this->input->method() === 'post') {
+			$form = $this->input->post(null, true);
 
-		$this->load->view('profile_page_signup', $result);
+			$firstName  = strtoupper(trim((string)($form['FirstName'] ?? '')));
+			$middleName = strtoupper(trim((string)($form['MiddleName'] ?? '')));
+			$lastName   = strtoupper(trim((string)($form['LastName'] ?? '')));
+			$nameExtn   = strtoupper(trim((string)($form['nameExtn'] ?? '')));
+			$email      = trim((string)($form['email'] ?? ''));
+			$contactNo  = trim((string)($form['contactNo'] ?? ''));
+			$birthDate  = trim((string)($form['birthDate'] ?? ''));
+			$age        = trim((string)($form['age'] ?? ''));
+
+			$accountData = [
+				'fName' => $firstName,
+				'mName' => $middleName,
+				'lName' => $lastName,
+				'email' => $email
+			];
+
+			$profileData = [
+				'FirstName'   => $firstName,
+				'MiddleName'  => $middleName,
+				'LastName'    => $lastName,
+				'nameExtn'    => $nameExtn,
+				'Sex'         => trim((string)($form['Sex'] ?? '')),
+				'birthDate'   => $birthDate,
+				'age'         => $age,
+				'contactNo'   => $contactNo,
+				'email'       => $email,
+				'CivilStatus' => trim((string)($form['CivilStatus'] ?? '')),
+				'BirthPlace'  => trim((string)($form['BirthPlace'] ?? '')),
+				'nationality' => trim((string)($form['nationality'] ?? 'Filipino')),
+				'working'     => trim((string)($form['working'] ?? 'No')),
+				'VaccStat'    => trim((string)($form['VaccStat'] ?? '')),
+				'sitio'       => trim((string)($form['sitio'] ?? $form['Sitio'] ?? '')),
+				'brgy'        => trim((string)($form['brgy'] ?? $form['Brgy'] ?? '')),
+				'city'        => trim((string)($form['city'] ?? $form['City'] ?? '')),
+				'province'    => trim((string)($form['province'] ?? $form['Province'] ?? ''))
+			];
+
+			$courseDesc = '';
+			if (!empty($form['Course1'])) {
+				$courseDesc = trim((string)$form['Course1']);
+			} elseif (!empty($form['course_id'])) {
+				$courseId = (int)$form['course_id'];
+				if (isset($courseLookup[$courseId])) {
+					$courseDesc = trim((string)$courseLookup[$courseId]->CourseDescription);
+				}
+			} elseif ($currentCourseDesc !== '') {
+				$courseDesc = $currentCourseDesc;
+			}
+
+			$yearLevel = trim((string)($form['yearLevel'] ?? $form['YearLevel'] ?? ''));
+			$section   = trim((string)($form['section'] ?? $form['Section'] ?? ''));
+
+			$enrollmentData = [];
+			if ($courseDesc !== '') {
+				$enrollmentData['Course'] = $courseDesc;
+				$profileData['course']    = $courseDesc;
+			}
+			if ($yearLevel !== '') {
+				$enrollmentData['YearLevel'] = $yearLevel;
+				$profileData['yearLevel']    = $yearLevel;
+			}
+			if ($section !== '') {
+				$enrollmentData['Section'] = $section;
+			}
+
+			$save = $this->StudentModel->updateMyProfileBundle(
+				$studentNumber,
+				$accountData,
+				$profileData,
+				$enrollmentData,
+				[
+					'semstudentid' => $bundle->enrollment->semstudentid ?? null,
+					'sy'           => $this->session->userdata('sy'),
+					'semester'     => $this->session->userdata('semester')
+				]
+			);
+
+			if (!empty($save['success'])) {
+				if ($isSelfApplicant || $isSelfStudent) {
+					$this->session->set_userdata('fName', $firstName);
+					$this->session->set_userdata('mName', $middleName);
+					$this->session->set_userdata('lName', $lastName);
+					if ($email !== '') {
+						$this->session->set_userdata('email', $email);
+					}
+					$this->session->set_flashdata('success', 'Your profile was updated.');
+				} else {
+					$this->session->set_flashdata('success', 'Applicant profile updated successfully.');
+				}
+				$redirectUrl = ($isSelfApplicant || $isSelfStudent)
+					? 'Page/student'
+					: 'Page/studentSignup?id=' . urlencode($studentNumber);
+			} else {
+				$this->session->set_flashdata('danger', 'We could not save the changes. Please try again.');
+				$redirectUrl = ($isSelfApplicant || $isSelfStudent)
+					? 'Page/studentSignup'
+					: 'Page/studentSignup?id=' . urlencode($studentNumber);
+			}
+
+			redirect($redirectUrl);
+			return;
+		}
+
+		$viewData = [
+			'bundle'            => $bundle,
+			'courses'           => $courses,
+			'yearLevels'        => $yearLevels,
+			'currentCourseDesc' => $currentCourseDesc,
+			'currentYear'       => $currentYear,
+			'currentSection'    => $currentSection,
+			'sexOptions'        => ['Female', 'Male'],
+			'pageTitle'         => ($isSelfApplicant || $isSelfStudent) ? 'My Profile' : 'Applicant Profile',
+			'pageDescription'   => ($isSelfApplicant || $isSelfStudent)
+				? 'Update your personal and academic details.'
+				: 'Review and update the applicant\'s personal and academic details.',
+			'backUrl'           => ($isSelfApplicant || $isSelfStudent)
+				? base_url('Page/studentProfile')
+				: base_url('Page/signUpList'),
+			'backLabel'         => ($isSelfApplicant || $isSelfStudent)
+				? 'Back to Profile'
+				: 'Back to Signup List',
+			'submitLabel'       => ($isSelfApplicant || $isSelfStudent)
+				? 'Save Changes'
+				: 'Save Applicant Changes'
+		];
+
+		$this->load->view('student_my_profile', $viewData);
 	}
 
 

@@ -3,6 +3,11 @@
 
 <?php include('includes/head.php'); ?>
 
+<?php
+$flashSuccess = $this->session->flashdata('success');
+$flashDanger  = $this->session->flashdata('danger');
+?>
+
 <style>
   .card.announcement-card{transition:transform .3s ease,box-shadow .3s ease,border .3s ease;border:1px solid #dee2e6;border-radius:6px}
   .card.announcement-card:hover{transform:scale(1.03);border:2px solid #007bff;box-shadow:0 8px 20px rgba(0,123,255,.2)}
@@ -360,6 +365,38 @@ if ($hasAvatar) {
       if(hasImg&&img){$('#vamImage').attr('src',img);$('#vamImageWrap').show();}
       else{$('#vamImage').attr('src','');$('#vamImageWrap').hide();}
     });
+  </script>
+  <script>
+    (function() {
+      var successMessage = <?= json_encode($flashSuccess ?? ''); ?>;
+      var dangerMessage  = <?= json_encode($flashDanger ?? ''); ?>;
+
+      if (typeof Swal === 'undefined') {
+        return;
+      }
+
+      if (!successMessage && !dangerMessage) {
+        return;
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        if (successMessage) {
+          Swal.fire({
+            icon: 'success',
+            title: 'Profile Updated',
+            text: successMessage,
+            confirmButtonColor: '#2563eb'
+          });
+        } else if (dangerMessage) {
+          Swal.fire({
+            icon: 'error',
+            title: 'Update Failed',
+            text: dangerMessage,
+            confirmButtonColor: '#dc2626'
+          });
+        }
+      });
+    })();
   </script>
 </body>
 </html>

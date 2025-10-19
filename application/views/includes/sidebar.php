@@ -46,7 +46,7 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                         <!-- student profile  -->
                         <a href="<?= base_url('Page/profileList'); ?>">
                             <i class="bi bi-person-fill"></i>
-                            <span> Student Profile </span>
+                            <span> Registered Students </span>
                         </a>
                     </li>
 
@@ -1164,10 +1164,14 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                     </li>
 
                     <li>
-                        <a href="<?= base_url('Page/myProfile'); ?>" class="waves-effect">
+                        <a href="javascript: void(0);" class="waves-effect">
                             <i class="mdi mdi-account-circle-outline"></i>
                             <span> My Profile </span>
+                            <span class="menu-arrow"></span>
                         </a>
+                        <ul class="nav-second-level" aria-expanded="false">
+                            <li><a href="<?= base_url('Page/studentProfile'); ?>">View/Edit Profile</a></li>
+                        </ul>
                     </li>
 
 
