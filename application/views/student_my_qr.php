@@ -55,16 +55,31 @@
       #myAttTable thead th{white-space:nowrap;background:color-mix(in srgb,var(--card) 95%,#fff 5%);border-bottom:1px solid var(--line)}
       #myAttTable td,#myAttTable th{vertical-align:middle}
       #myAttTable tbody tr:hover{background:color-mix(in srgb,var(--card) 92%,#3b82f6 8%)}
-      .pill{display:inline-block;border-radius:999px;padding:.18rem .55rem;font-size:.75rem;font-weight:800}
-      .pill-ses{background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe}
-      .badge-soft{background:#eef2ff;color:#1e3a8a}
-      .muted-hint{color:var(--muted);font-size:.85rem;margin-top:.6rem}
+.pill{display:inline-block;border-radius:999px;padding:.18rem .55rem;font-size:.75rem;font-weight:800}
+.pill-ses{background:#eef2ff;color:#4338ca;border:1px solid #c7d2fe}
+.badge-soft{background:#eef2ff;color:#1e3a8a}
+.muted-hint{color:var(--muted);font-size:.85rem;margin-top:.6rem}
 
-      /* ===== Mobile-first responsive table ===== */
-      @media (max-width: 575.98px){
-        .col-sm-hide{display:none}
-        .qr-actions .btn{min-width:auto}
-      }
+.att-card{border:1px solid var(--line);border-radius:14px;background:var(--card);box-shadow:0 4px 14px rgba(15,23,42,.08);margin-bottom:12px;overflow:hidden}
+.att-card-header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;background:color-mix(in srgb,var(--card) 92%,#fff 8%);border-bottom:1px solid var(--line);color:#0f172a;font-weight:700;font-size:14px}
+.att-card-toggle{border:none;background:none;padding:0;margin:0;color:inherit;display:flex;flex-direction:column;align-items:flex-start;text-align:left;width:100%}
+.att-card-title{display:flex;align-items:center;gap:.4rem;flex-wrap:wrap}
+.att-card-date{font-size:12px;color:var(--muted);font-weight:400}
+.att-card-session{margin-left:auto}
+.att-card-toggle .toggle-icon{margin-left:8px;font-size:16px;transition:transform .2s ease}
+.att-card-body{padding:12px 16px;background:var(--card)}
+.att-detail-row{display:flex;justify-content:space-between;margin-bottom:8px;font-size:13px;color:var(--ink);gap:1rem}
+.att-detail-label{color:var(--muted);font-weight:600}
+.att-detail-value{text-align:right;flex:1}
+.status-badge{display:inline-block;padding:.25rem .6rem;border-radius:999px;font-size:.75rem;font-weight:700}
+.status-open{background:#fef3c7;color:#b45309;border:1px solid #fcd34d}
+.status-complete{background:#dcfce7;color:#166534;border:1px solid #bbf7d0}
+
+/* ===== Mobile-first responsive table ===== */
+@media (max-width: 575.98px){
+  .col-sm-hide{display:none}
+  .qr-actions .btn{min-width:auto}
+}
       @media (max-width: 420px){
         .btn{padding:.45rem .7rem}
         .btn i{margin-right:.2rem}
@@ -147,9 +162,9 @@
     <h4 class="page-title d-flex align-items-center">
       <i class="ion ion-ios-qr-scanner mr-2" aria-hidden="true"></i>
       My Permanent QR
-      <span class="badge badge-info ml-2">For Co-Curricular Attendance</span>
+      <span class="badge badge-info ml-2">For All Activities</span>
     </h4>
-    <div class="page-sub">Use this code for all co-curricular activities.</div>
+    <div class="page-sub">Use this code for all activities.</div>
   </div>
 
   <!-- NEW wrapper -->
@@ -203,7 +218,7 @@
 
                     <hr class="my-3" />
                     <ul class="soft-note list-unstyled mb-0 text-left mx-auto" style="max-width:520px;color:var(--muted)">
-                      <li class="mb-2">Show this QR to the <b>Head/Usher</b> for scanning.</li>
+                      <li class="mb-2">Show this QR to the <b>Heads</b> for scanning.</li>
                       <li class="mb-2">Or use <b>Scan QR</b> to scan poster codes for self check-in.</li>
                       <li>Having trouble? Ask the registrar or event staff.</li>
                     </ul>
@@ -233,7 +248,7 @@
               </div>
 
               <div class="table-wrap shadow-soft rounded-2xl">
-                <div class="table-responsive" style="-webkit-overflow-scrolling:touch">
+                <div class="table-responsive d-none d-md-block" style="-webkit-overflow-scrolling:touch">
                   <table class="table table-sm table-hover mb-0" id="myAttTable">
                     <thead>
                       <tr>
@@ -252,6 +267,9 @@
                       <tr><td colspan="9" class="text-center text-muted">Loadingâ€¦</td></tr>
                     </tbody>
                   </table>
+                </div>
+                <div id="mobileAttList" class="d-md-none px-2 py-3">
+                  <div class="text-center text-muted py-3">Loadingâ€¦</div>
                 </div>
               </div>
 
@@ -377,9 +395,15 @@
       const tbody = document.querySelector('#myAttTable tbody');
       const rangeBtns = document.querySelectorAll('[data-range]');
       let allRows = [];
+      const mobileList = document.getElementById('mobileAttList');
+      const escapeHtml = function (str) {
+        return String(str ?? '').replace(/[&<>\"']/g, function (c) {
+          return ({'&':'&amp;','<':'&lt;','>':'&gt;','\"':'&quot;','\'':'&#39;'}[c]);
+        });
+      };
 
       function sesLbl(s){ return ({am:'Morning', pm:'Afternoon', eve:'Evening'})[s||''] || 'â€”'; }
-      function fmt(iso){ if(!iso) return ''; try{ return moment(iso).format('MMM D, YYYY HH:mm:ss'); }catch(e){ return iso; } }
+      function fmt(iso){ if(!iso) return ''; try{ return moment(iso).format('hh:mm:ss A'); }catch(e){ return iso; } }
       function dur(a,b){
         if (!a || !b) return '';
         const mins = Math.max(0, Math.round((new Date(b)-new Date(a))/60000));
@@ -408,32 +432,70 @@
       }
 
       function render(rows){
-        tbody.innerHTML='';
+        tbody.innerHTML = '';
+        if (mobileList) mobileList.innerHTML = '';
         if (!rows.length){
-          tbody.innerHTML='<tr><td colspan="9" class="text-center text-muted">No attendance yet.</td></tr>';
+          tbody.innerHTML = '<tr><td colspan="9" class="text-center text-muted">No attendance yet.</td></tr>';
+          if (mobileList) mobileList.innerHTML = '<div class="text-center text-muted py-3">No attendance yet.</div>';
           return;
         }
+        let mobileHtml = '';
         rows.forEach((r,i)=>{
-          const title=(r.title&&r.title.trim())?r.title:(r.activity_id?('Activity #'+r.activity_id):'');
-          const dateStr=r.activity_date?moment(r.activity_date).format('MMM D, YYYY'):'';
-          const tr=document.createElement('tr');
-          tr.innerHTML=
+          const titleRaw = (r.title && r.title.trim()) ? r.title : (r.activity_id ? ('Activity #' + r.activity_id) : 'Activity');
+          const title = escapeHtml(titleRaw);
+          const dateStr = r.activity_date ? moment(r.activity_date).format('MMM D, YYYY') : '';
+          const sessionLabel = sesLbl(r.session);
+          const checkIn = r.checked_in_at ? fmt(r.checked_in_at) : '—';
+          const checkOut = r.checked_out_at ? fmt(r.checked_out_at) : '—';
+          const durationText = r.checked_out_at ? dur(r.checked_in_at, r.checked_out_at) : '—';
+          const statusHtml = statusBadge(r);
+          const sourceHtml = srcBadge(r.source);
+          const remarksText = (r.remarks && r.remarks.trim()) ? escapeHtml(r.remarks) : (String(r.source).toLowerCase()==='qr' ? 'Scanned via QR' : '—');
+          const tr = document.createElement('tr');
+          tr.innerHTML =
             '<td class="col-sm-hide">'+(i+1)+'</td>'+
             '<td>'+
               '<div class="activity-title">'+title+'</div>'+
-              (dateStr?'<small class="text-muted activity-date"><i class="ion ion-md-calendar mr-1" aria-hidden="true"></i>'+dateStr+'</small>':'')+
+              (dateStr?'<small class="text-muted activity-date"><i class="ion ion-md-calendar mr-1" aria-hidden="true"></i>'+escapeHtml(dateStr)+'</small>':'')+
             '</td>'+
-            '<td class="col-sm-hide"><span class="pill pill-ses">'+sesLbl(r.session)+'</span></td>'+
-            '<td>'+ (r.checked_in_at?fmt(r.checked_in_at):'â€”') +'</td>'+
-            '<td class="col-sm-hide">'+ (r.checked_out_at?fmt(r.checked_out_at):'â€”') +'</td>'+
-            '<td>'+ statusBadge(r) +'</td>'+
-            '<td class="col-sm-hide">'+ (r.checked_out_at?dur(r.checked_in_at,r.checked_out_at):'') +'</td>'+
-            '<td class="col-sm-hide">'+ srcBadge(r.source) +'</td>'+
-            '<td class="col-sm-hide">'+ (r.remarks && r.remarks.trim()?r.remarks:(String(r.source).toLowerCase()==='qr'?'Scanned via QR':'â€”')) +'</td>';
+            '<td class="col-sm-hide"><span class="pill pill-ses">'+escapeHtml(sessionLabel)+'</span></td>'+
+            '<td>'+ checkIn +'</td>'+
+            '<td class="col-sm-hide">'+ checkOut +'</td>'+
+            '<td>'+ statusHtml +'</td>'+
+            '<td class="col-sm-hide">'+ (r.checked_out_at?durationText:'') +'</td>'+
+            '<td class="col-sm-hide">'+ sourceHtml +'</td>'+
+            '<td class="col-sm-hide">'+ remarksText +'</td>';
           tbody.appendChild(tr);
-        });
-      }
 
+          if (mobileList) {
+            const collapseId = 'att-card-' + i;
+            mobileHtml += `
+              <div class="att-card">
+                <div class="att-card-header">
+                  <button type="button" class="att-card-toggle collapsed" data-toggle="collapse" data-target="#${collapseId}" aria-expanded="false" aria-controls="${collapseId}">
+                    <div class="d-flex flex-column text-left">
+                      <span class="att-card-title">${title}</span>
+                      ${dateStr ? `<span class="att-card-date">${escapeHtml(dateStr)}</span>` : ''}
+                    </div>
+                    <span class="toggle-icon">+</span>
+                  </button>
+                  <span class="pill-inline">${escapeHtml(sessionLabel)}</span>
+                </div>
+                <div id="${collapseId}" class="collapse" data-parent="#mobileAttList">
+                  <div class="att-card-body">
+                    <div class="att-detail-row"><span class="att-detail-label">Check-In</span><span class="att-detail-value">${escapeHtml(checkIn)}</span></div>
+                    <div class="att-detail-row"><span class="att-detail-label">Check-Out</span><span class="att-detail-value">${escapeHtml(checkOut)}</span></div>
+                    <div class="att-detail-row"><span class="att-detail-label">Duration</span><span class="att-detail-value">${escapeHtml(durationText)}</span></div>
+                    <div class="att-detail-row"><span class="att-detail-label">Status</span><span class="att-detail-value">${statusHtml}</span></div>
+                    <div class="att-detail-row"><span class="att-detail-label">Source</span><span class="att-detail-value">${sourceHtml}</span></div>
+                    <div class="att-detail-row"><span class="att-detail-label">Remarks</span><span class="att-detail-value">${remarksText}</span></div>
+                  </div>
+                </div>
+              </div>`;
+          }
+        });
+        if (mobileList) mobileList.innerHTML = mobileHtml;
+      }
       function applyRange(range){
         const filtered=allRows.filter(r=>withinRange(r,range));
         render(filtered);
