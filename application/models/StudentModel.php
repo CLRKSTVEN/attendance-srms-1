@@ -1331,15 +1331,56 @@ public function SexCount($sem = null, $sy = null)
 
 	public function getsignProfile()
 	{
-		$query = $this->db->query("
-			SELECT * FROM studentsignup s
-			WHERE NOT EXISTS (
-				SELECT 1 FROM studeprofile p 
-				WHERE p.StudentNumber COLLATE utf8mb4_unicode_ci = s.StudentNumber COLLATE utf8mb4_unicode_ci
-			)
-			ORDER BY s.LastName
-		");
-		return $query->result();
+		$sql = "
+			SELECT
+				TRIM(COALESCE(NULLIF(s.LastName, ''), NULLIF(sp.LastName, ''), NULLIF(ou.lName, ''), ''))   AS LastName,
+				TRIM(COALESCE(NULLIF(s.FirstName, ''), NULLIF(sp.FirstName, ''), NULLIF(ou.fName, ''), '')) AS FirstName,
+				TRIM(COALESCE(NULLIF(s.MiddleName, ''), NULLIF(sp.MiddleName, ''), NULLIF(ou.mName, ''), '')) AS MiddleName,
+				TRIM(s.StudentNumber)                                                                     AS StudentNumber,
+				NULLIF(s.birthDate, '')                                                                    AS birthDate,
+				NULLIF(s.yearLevel, '')                                                                    AS yearLevel,
+				NULLIF(s.section, '')                                                                      AS section,
+				NULLIF(s.Status, '')                                                                       AS signupStatus,
+				'studentsignup'                                                                            AS source_table
+			FROM studentsignup s
+			LEFT JOIN o_users ou
+			  ON LOWER(TRIM(ou.username)) = LOWER(TRIM(s.StudentNumber))
+			LEFT JOIN studeprofile sp
+			  ON LOWER(TRIM(sp.StudentNumber)) = LOWER(TRIM(s.StudentNumber))
+
+			UNION ALL
+
+			SELECT
+				TRIM(COALESCE(NULLIF(sp.LastName, ''), NULLIF(ou.lName, ''), ''))   AS LastName,
+				TRIM(COALESCE(NULLIF(sp.FirstName, ''), NULLIF(ou.fName, ''), '')) AS FirstName,
+				TRIM(COALESCE(NULLIF(sp.MiddleName, ''), NULLIF(ou.mName, ''), '')) AS MiddleName,
+				TRIM(ou.username)                                                  AS StudentNumber,
+				NULLIF(sp.birthDate, '')                                           AS birthDate,
+				NULL                                                               AS yearLevel,
+				NULL                                                               AS section,
+				COALESCE(NULLIF(ou.acctStat, ''), 'Registered')                    AS signupStatus,
+				'o_users'                                                          AS source_table
+			FROM o_users ou
+			LEFT JOIN studeprofile sp
+			  ON LOWER(TRIM(sp.StudentNumber)) = LOWER(TRIM(ou.username))
+			WHERE ou.position IN ('Student', 'Stude Applicant')
+			  AND NOT EXISTS (
+				  SELECT 1
+				  FROM studentsignup s
+				  WHERE LOWER(TRIM(s.StudentNumber)) = LOWER(TRIM(ou.username))
+			  )
+		";
+
+		$wrapped = "
+			SELECT *
+			FROM ({$sql}) AS combined
+			ORDER BY
+				COALESCE(LastName, ''),
+				COALESCE(FirstName, ''),
+				StudentNumber
+		";
+
+		return $this->db->query($wrapped)->result();
 	}
 
 

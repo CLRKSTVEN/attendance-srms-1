@@ -2337,6 +2337,8 @@ public function deleteSignup()
 
     // (2) Delete the signup/registration
     $this->db->delete('studentsignup', ['StudentNumber' => $studno]);
+    // (2b) Remove any saved profile card for the student
+    $this->db->delete('studeprofile', ['StudentNumber' => $studno]);
     // Primary rule: username == StudentNumber; limit to student-ish roles to avoid staff deletions
     $this->db->where('username', $studno)
              ->group_start()
@@ -2356,7 +2358,7 @@ public function deleteSignup()
         $this->session->set_flashdata('danger', 'Delete failed. Please try again or check logs.');
     } else {
         $this->session->set_flashdata('success',
-            'Deleted registration, semester records, and user account for '.$studno.'.');
+            'Deleted registration, profile, semester records, and user account for '.$studno.'.');
     }
 
     // Redirect back
