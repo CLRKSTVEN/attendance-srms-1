@@ -7,49 +7,58 @@ if (!isset($online_settings)) {
 $showOnline = (int)($online_settings->show_online_payments ?? 1);
 ?>
 
+<style>
+.left-side-menu .metismenu li > ul {
+    display: none !important;
+}
+.left-side-menu .metismenu li.mm-open > ul,
+.left-side-menu .metismenu li > ul.mm-show {
+    display: block !important;
+}
+</style>
 
 <div class="left-side-menu">
     <div class="slimscroll-menu">
         <!-- System Administrator -->
        <?php if ($this->session->userdata('level') === 'Admin'): ?>
-    <?php
-        $currentUri = trim(uri_string(), '/');
-        $segment1   = strtolower($this->uri->segment(1) ?? '');
-        $segment2   = strtolower($this->uri->segment(2) ?? '');
-    ?>
-    <div id="sidebar-menu">
-        <ul class="metismenu" id="side-menu">
+            <?php
+            $currentUri = trim(uri_string(), '/');
+            $segment1   = strtolower($this->uri->segment(1) ?? '');
+            $segment2   = strtolower($this->uri->segment(2) ?? '');
+            ?>
+            <div id="sidebar-menu">
+                <ul class="metismenu" id="side-menu">
 
-            <li class="menu-title">ADMINISTRATION</li>
+                    <li class="menu-title">ADMINISTRATION</li>
 
-            <!-- Dashboard (keep visible) -->
-            <li>
-                <a href="<?= base_url(); ?>Page/admin" class="waves-effect">
-                    <i class="bi bi-speedometer2"></i>
-                    <span> Dashboard </span>
-                </a>
-            </li>
-          
-              <li>
+                    <!-- Dashboard (keep visible) -->
+                    <li>
+                        <a href="<?= base_url(); ?>Page/admin" class="waves-effect">
+                            <i class="bi bi-speedometer2"></i>
+                            <span> Dashboard </span>
+                        </a>
+                    </li>
 
-
-            <!-- student profile  -->
-<a href="<?= base_url('Page/profileList'); ?>">
-<i class="bi bi-person-fill"></i>
-    <span> Student Profile </span>
-  </a>
-</li>
+                    <li>
 
 
+                        <!-- student profile  -->
+                        <a href="<?= base_url('Page/profileList'); ?>">
+                            <i class="bi bi-person-fill"></i>
+                            <span> Student Profile </span>
+                        </a>
+                    </li>
 
-  <li>
-  <a href="<?= base_url('AttendanceLogs'); ?>" class="waves-effect">
-    <i class="bi bi-clipboard-check"></i>
-    <span> Attendance Logs </span>
-  </a>
-</li>
-        
-            <!-- ===== HIDE: Document Request =====
+
+
+                    <li>
+                        <a href="<?= base_url('AttendanceLogs'); ?>" class="waves-effect">
+                            <i class="bi bi-clipboard-check"></i>
+                            <span> Attendance Logs </span>
+                        </a>
+                    </li>
+
+                    <!-- ===== HIDE: Document Request =====
             <li>
                 <a href="javascript: void(0);" class="waves-effect">
                     <i class="fas fa-archive"></i>
@@ -64,7 +73,7 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
             </li>
             ===== /HIDE ===== -->
 
-            <!-- ===== HIDE: Upload =====
+                    <!-- ===== HIDE: Upload =====
             <li>
                 <a href="javascript: void(0);" class="waves-effect">
                     <i class="ion ion-md-cloud-upload"></i>
@@ -80,57 +89,57 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
             </li>
             ===== /HIDE ===== -->
 
-            <!-- Announcement (keep visible) -->
-        
+                    <!-- Announcement (keep visible) -->
 
-            <!-- Activities (QR) (keep visible) -->
-            <?php
-              $flagPath = APPPATH . 'cache' . DIRECTORY_SEPARATOR . 'qr_poster_mode.flag';
-              $posterModeGlobal = (is_file($flagPath) && strtolower(trim(@file_get_contents($flagPath))) === 'on');
-              $isAdmin = ($this->session->userdata('level') === 'Admin');
-              $activitiesOpen = ($segment1 === 'activities');
-              $activitiesExpand = $activitiesOpen ? 'true' : 'false';
-              $activitiesShow = $activitiesOpen ? 'mm-show' : '';
-              $activitiesActive = $activitiesOpen ? 'mm-active' : '';
-            ?>
-            <li class="<?= $activitiesActive; ?>">
-              <a href="javascript:void(0);" class="waves-effect has-arrow" aria-expanded="<?= $activitiesExpand; ?>">
-                <i class="ion bi bi-qr-code-scan"></i>
-                <span> Activities (QR) </span>
-                <span class="menu-arrow"></span>
-              </a>
-              <ul class="nav-second-level <?= $activitiesShow; ?>" aria-expanded="<?= $activitiesExpand; ?>">
-                <li class="<?= $activitiesOpen ? 'active' : ''; ?>"><a href="<?= base_url('activities'); ?>">Open Activities</a></li>
 
-                <?php if ($isAdmin): ?>
-                  <li class="pt-1 pb-2 px-3">
-                    <div class="d-flex align-items-center justify-content-between">
-                      <span class="text-muted">Poster Mode</span>
-                      <div class="custom-control custom-switch m-0">
-                        <input
-                          type="checkbox"
-                          class="custom-control-input"
-                          id="qrPosterSwitch"
-                          aria-label="Toggle Poster Mode"
-                          onchange="location.href='<?= site_url('activities/set_mode/') ?>'+(this.checked?'on':'off')"
-                          <?= $posterModeGlobal ? 'checked' : '' ?>>
-                        <label class="custom-control-label" for="qrPosterSwitch"></label>
-                      </div>
-                    </div>
-                    <div class="text-muted small mt-1">(On = Poster, Off = Scanner)</div>
-                  </li>
-                <?php endif; ?>
-              </ul>
-            </li>
-    <!-- <li>
+                    <!-- Activities (QR) (keep visible) -->
+                    <?php
+                    $flagPath = APPPATH . 'cache' . DIRECTORY_SEPARATOR . 'qr_poster_mode.flag';
+                    $posterModeGlobal = (is_file($flagPath) && strtolower(trim(@file_get_contents($flagPath))) === 'on');
+                    $isAdmin = ($this->session->userdata('level') === 'Admin');
+                    $activitiesOpen = ($segment1 === 'activities');
+                    $activitiesExpand = $activitiesOpen ? 'true' : 'false';
+                    $activitiesShow = $activitiesOpen ? 'mm-show' : '';
+                    $activitiesActive = $activitiesOpen ? 'mm-active' : '';
+                    ?>
+                    <li class="<?= $activitiesActive; ?>">
+                        <a href="javascript:void(0);" class="waves-effect has-arrow" aria-expanded="<?= $activitiesExpand; ?>">
+                            <i class="ion bi bi-qr-code-scan"></i>
+                            <span> Activities (QR) </span>
+                            <span class="menu-arrow"></span>
+                        </a>
+                        <ul class="nav-second-level <?= $activitiesShow; ?>" aria-expanded="<?= $activitiesExpand; ?>">
+                            <li class="<?= $activitiesOpen ? 'active' : ''; ?>"><a href="<?= base_url('activities'); ?>">Open Activities</a></li>
+
+                            <?php if ($isAdmin): ?>
+                                <li class="pt-1 pb-2 px-3">
+                                    <div class="d-flex align-items-center justify-content-between">
+                                        <span class="text-muted">Poster Mode</span>
+                                        <div class="custom-control custom-switch m-0">
+                                            <input
+                                                type="checkbox"
+                                                class="custom-control-input"
+                                                id="qrPosterSwitch"
+                                                aria-label="Toggle Poster Mode"
+                                                onchange="location.href='<?= site_url('activities/set_mode/') ?>'+(this.checked?'on':'off')"
+                                                <?= $posterModeGlobal ? 'checked' : '' ?>>
+                                            <label class="custom-control-label" for="qrPosterSwitch"></label>
+                                        </div>
+                                    </div>
+                                    <div class="text-muted small mt-1">(On = Poster, Off = Scanner)</div>
+                                </li>
+                            <?php endif; ?>
+                        </ul>
+                    </li>
+                    <!-- <li>
                 <a href="<?= base_url(); ?>Page/announcement?id=<?php echo $this->session->userdata('username'); ?>" class="waves-effect">
                     <i class="bi bi-megaphone"></i>
                     <span> Announcement </span>
                 </a>
             </li> -->
 
-            <!-- To Do (keep visible) -->
-            <!-- <li>
+                    <!-- To Do (keep visible) -->
+                    <!-- <li>
                 <a href="javascript: void(0);" class="waves-effect">
                     <i class="ion ion-md-paper"></i>
                     <span> To Do </span>
@@ -141,87 +150,87 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                 </ul>
             </li> -->
 
-            <!-- Notes (keep visible) -->
-            <!-- <li>
+                    <!-- Notes (keep visible) -->
+                    <!-- <li>
                 <a href="<?= base_url(); ?>Note/" class="waves-effect">
                     <i class="ion ion-md-paper"></i>
                     <span> Notes </span>
                 </a>
             </li> -->
-            <?php
-            $manageMatch = static function (array $prefixes) use ($currentUri) {
-                foreach ($prefixes as $prefix) {
-                    $prefix = trim($prefix, '/');
-                    if ($prefix !== '' && stripos($currentUri, $prefix) === 0) {
-                        return true;
-                    }
-                }
-                return false;
-            };
-            $manageTargets = [
-                'Settings/Department',
-                'Settings/department',
-                'Page/manageSections',
-                'Page/addSection',
-                'Page/editSection',
-                'Page/userAccounts'
-            ];
-            $manageOpen   = $manageMatch($manageTargets);
-            $manageExpand = $manageOpen ? 'true' : 'false';
-            $manageShow   = $manageOpen ? 'mm-show' : '';
-            $manageActive = $manageOpen ? 'mm-active mm-open' : '';
-            ?>
-            
-<li class="<?= $manageActive; ?>">
-    <a href="javascript: void(0);" class="waves-effect has-arrow" aria-expanded="<?= $manageExpand; ?>">
-        <i class="ion ion-md-contacts"></i>
-        <span> Manage  </span>
-        <span class="menu-arrow"></span>
-    </a>
-    <ul class="nav-second-level <?= $manageShow; ?>" aria-expanded="<?= $manageExpand; ?>">
-        <?php
-        $isCourseActive   = stripos($currentUri, trim('Settings/Department', '/')) === 0;
-        $sectionPrefixes  = ['Page/manageSections', 'Page/addSection', 'Page/editSection'];
-        $isSectionActive  = $manageMatch($sectionPrefixes);
-        $isUserActive     = stripos($currentUri, trim('Page/userAccounts', '/')) === 0;
+                    <?php
+                    $manageMatch = static function (array $prefixes) use ($currentUri) {
+                        foreach ($prefixes as $prefix) {
+                            $prefix = trim($prefix, '/');
+                            if ($prefix !== '' && stripos($currentUri, $prefix) === 0) {
+                                return true;
+                            }
+                        }
+                        return false;
+                    };
+                    $manageTargets = [
+                        'Settings/Department',
+                        'Settings/department',
+                        'Page/manageSections',
+                        'Page/addSection',
+                        'Page/editSection',
+                        'Page/userAccounts'
+                    ];
+                    $manageOpen   = $manageMatch($manageTargets);
+                    $manageExpand = $manageOpen ? 'true' : 'false';
+                    $manageShow   = $manageOpen ? 'mm-show' : '';
+                    $manageActive = $manageOpen ? 'mm-active mm-open' : '';
+                    ?>
 
-        $courseLinkClass  = $isCourseActive ? 'active' : '';
-        $sectionLinkClass = $isSectionActive ? 'active' : '';
-        $userLinkClass    = $isUserActive ? 'active' : '';
-        ?>
-        <li>
-            <a class="<?= $courseLinkClass; ?>" href="<?= base_url('Settings/Department'); ?>"> Course </a>
-        </li>
-          <!-- Manage Sections -->
-        <li>
-            <a class="<?= $sectionLinkClass; ?>" href="<?= base_url('Page/manageSections'); ?>"> Sections </a>
-        </li>
-        <li>
-            <a class="<?= $userLinkClass; ?>" href="<?= base_url('Page/userAccounts'); ?>"> User Accounts </a>
-        </li>
-    </ul>
-</li>
+                    <li class="<?= $manageActive; ?>">
+                        <a href="javascript: void(0);" class="waves-effect has-arrow" aria-expanded="<?= $manageExpand; ?>">
+                            <i class="ion ion-md-contacts"></i>
+                            <span> Manage </span>
+                            <span class="menu-arrow"></span>
+                        </a>
+                        <ul class="nav-second-level <?= $manageShow; ?>" aria-expanded="<?= $manageExpand; ?>">
+                            <?php
+                            $isCourseActive   = stripos($currentUri, trim('Settings/Department', '/')) === 0;
+                            $sectionPrefixes  = ['Page/manageSections', 'Page/addSection', 'Page/editSection'];
+                            $isSectionActive  = $manageMatch($sectionPrefixes);
+                            $isUserActive     = stripos($currentUri, trim('Page/userAccounts', '/')) === 0;
 
-            <li>
-                <a href="javascript: void(0);" class="waves-effect">
-                    <i class="ion ion-md-settings"></i>
-                    <span> User Settings </span>
-                    <span class="menu-arrow"></span>
-                </a>
-                <ul class="nav-second-level" aria-expanded="false">
-                    <li><a href="<?= base_url('Page/changeDP?id=' . urlencode($this->session->userdata('username'))); ?>">Change Profile Picture</a></li>
+                            $courseLinkClass  = $isCourseActive ? 'active' : '';
+                            $sectionLinkClass = $isSectionActive ? 'active' : '';
+                            $userLinkClass    = $isUserActive ? 'active' : '';
+                            ?>
+                            <li>
+                                <a class="<?= $courseLinkClass; ?>" href="<?= base_url('Settings/Department'); ?>"> Course </a>
+                            </li>
+                            <!-- Manage Sections -->
+                            <li>
+                                <a class="<?= $sectionLinkClass; ?>" href="<?= base_url('Page/manageSections'); ?>"> Sections </a>
+                            </li>
+                            <li>
+                                <a class="<?= $userLinkClass; ?>" href="<?= base_url('Page/userAccounts'); ?>"> User Accounts </a>
+                            </li>
+                        </ul>
+                    </li>
 
-                    <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
-                </ul>
-            </li>
-   <li>
-                <a href="<?= base_url('Login/logout'); ?>" class="waves-effect logout-confirm">
-                    <i class="ion bi bi-box-arrow-right"></i>
-                    <span> Logout </span>
-                </a>
-            </li>
-            <!-- Settings (keep visible) -->
-            <!-- <li>
+                    <li>
+                        <a href="javascript: void(0);" class="waves-effect">
+                            <i class="ion ion-md-settings"></i>
+                            <span> User Settings </span>
+                            <span class="menu-arrow"></span>
+                        </a>
+                        <ul class="nav-second-level" aria-expanded="false">
+                            <li><a href="<?= base_url('Page/changeDP?id=' . urlencode($this->session->userdata('username'))); ?>">Change Profile Picture</a></li>
+
+                            <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
+                        </ul>
+                    </li>
+                    <li>
+                        <a href="<?= base_url('Login/logout'); ?>" class="waves-effect logout-confirm">
+                            <i class="ion bi bi-box-arrow-right"></i>
+                            <span> Logout </span>
+                        </a>
+                    </li>
+                    <!-- Settings (keep visible) -->
+                    <!-- <li>
                 <a href="javascript: void(0);" class="waves-effect">
                     <i class="ion ion-md-settings"></i>
                     <span> Settings </span>
@@ -240,7 +249,7 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                 </ul>
             </li> -->
 
-            <!-- ===== HIDE: SRMS FAQ =====
+                    <!-- ===== HIDE: SRMS FAQ =====
             <li>
                 <a href="<?= base_url(); ?>FAQ/" target="_blank" class="waves-effect">
                     <i class="ion ion-md-help"></i>
@@ -249,8 +258,8 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
             </li>
             ===== /HIDE ===== -->
 
-        </ul>
-    </div>
+                </ul>
+            </div>
 
 
         <?php elseif ($this->session->userdata('level') === 'IT'): ?>
@@ -1141,614 +1150,72 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                 </ul>
             </div>
 
-<?php elseif (in_array($this->session->userdata('level'), ['Student','Stude Applicant'], true)): ?>
-    <div id="sidebar-menu">
-        <ul class="metismenu" id="side-menu">
-            <li class="menu-title">Navigation</li>
-
-            <li>
-                <a href="<?= base_url('Page/student'); ?>" class="waves-effect">
-                    <i class="ion-md-speedometer"></i>
-                    <span> Dashboard </span>
-                </a>
-            </li>
-
-            <li>
-                <a href="<?= base_url('Page/studentsprofile?id=' . $this->session->userdata('username')); ?>" class="waves-effect">
-                    <i class="ion ion-md-contact"></i>
-                    <span> My Profile </span>
-                </a>
-            </li>
-
-            <li>
-                <a href="<?= site_url('student/my_qr'); ?>" class="waves-effect" title="My QR Code">
-                    <i class="bi bi-qr-code"></i>
-                    <span> My QR Code </span>
-                </a>
-            </li>
-
-            <li>
-                <a href="javascript: void(0);" class="waves-effect">
-                    <i class="ion ion-md-settings"></i>
-                    <span> User Settings </span>
-                    <span class="menu-arrow"></span>
-                </a>
-                <ul class="nav-second-level" aria-expanded="false">
-                                        <li><a href="<?= base_url('Page/changeDP?id=' . urlencode($this->session->userdata('username'))); ?>">Change Profile Picture</a></li>
-
-                    <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
-                </ul>
-            </li>
-
-            <li>
-                <a href="<?= base_url('Login/logout'); ?>" class="waves-effect logout-confirm">
-                    <i class="ion bi bi-box-arrow-right"></i>
-                    <span> Logout </span>
-                </a>
-            </li>
-        </ul>
-    </div>
-
-        <?php elseif ($this->session->userdata('level') === 'Instructor'): ?>
+        <?php elseif (in_array($this->session->userdata('level'), ['Student', 'Stude Applicant'], true)): ?>
             <div id="sidebar-menu">
                 <ul class="metismenu" id="side-menu">
-
                     <li class="menu-title">Navigation</li>
 
                     <li>
-                        <a href="<?= base_url(); ?>Page/instructor" class="waves-effect">
+                        <a href="<?= base_url('Page/student'); ?>" class="waves-effect">
                             <i class="ion-md-speedometer"></i>
                             <span> Dashboard </span>
                         </a>
                     </li>
 
-                    <!-- <li>
-                        <a href="<?= base_url(); ?>Page/staffprofile?id=<?php echo $this->session->userdata('username'); ?>" class="waves-effect">
-                            <i class="ion ion-md-contact "></i>
+                    <li>
+                        <a href="<?= base_url('Page/studentsprofile?id=' . $this->session->userdata('username')); ?>" class="waves-effect">
+                            <i class="ion ion-md-contact"></i>
                             <span> My Profile </span>
                         </a>
-                    </li> -->
-
-
-                    <!-- 
-                    <li>
-                        <a href="<?= base_url(); ?>Instructor/facultyLoad?id=<?php echo $this->session->userdata('username'); ?>" class="waves-effect">
-                            <i class="ion ion-md-contact "></i>
-                            <span> Faculty Load </span>
-                        </a>
-                    </li> -->
-
-
-
-                    <!-- <li>
-                        <a href="<?= base_url(); ?>GradeEncoding/index" class="waves-effect">
-                            <i class=" ion ion-ios-key"></i>
-                            <span> Encode Grades </span>
-                        </a>
-                    </li> -->
-
-
-
-                    <li class="has-nav-second-level">
-                        <a href="javascript:void(0);" class="waves-effect">
-                            <i class="ion-md-create"></i>
-                            <span> Grades Module </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level">
-                            <li>
-                                <a href="<?= base_url(); ?>Page/save_grades">Manual Grades Encoding</a>
-                            </li>
-
-                            <li>
-                                <a href="<?= base_url(); ?>Settings/grades_status_list">Grades Encoding Status</a>
-                            </li>
-                            <li>
-                                <!-- <a href="<?= base_url(); ?>Instructor/consol_teacher" target="_blank">Consolidated Grades</a> -->
-                            </li>
-                            <li>
-                                <!-- <a href="<?= base_url(); ?>Page/update_grades">Calculate Grades</a> -->
-                            </li>
-
-
-                        </ul>
                     </li>
 
-
-                    <?php
-                    $id = $this->session->userdata('username');
-                    $isProgramHead = $this->db->where('IDNumber', $id)->get('course_table')->num_rows() > 0;
-
-                    // Get the first assigned course/major for direct link
-                    $firstCourse = $this->db->where('IDNumber', $id)->get('course_table')->row();
-                    ?>
-
-                    <?php if ($isProgramHead): ?>
-
-
-                        <li>
-                            <a href="javascript: void(0);" class="waves-effect">
-                                <i class=" ion ion-md-school"></i>
-                                <span> Admission </span>
-                                <span class="menu-arrow"></span>
-
-
-                            </a>
-                            <ul class="nav-second-level" aria-expanded="false">
-                                <!-- <li><a href="<?= base_url(); ?>Page/profileListEncoder">Student's Profile</a> </li> -->
-                                <li><a href="<?= base_url('Masterlist/enrolledListPH') ?>">Enrollment</a></li>
-
-                            </ul>
-                        </li>
-
-
-                        <li>
-                            <a href="javascript: void(0);" class="waves-effect">
-                                <i class="ion ion-md-folder"></i>
-                                <span>Class Program</span>
-                                <span class="menu-arrow"></span>
-                            </a>
-                            <ul class="nav-second-level nav" aria-expanded="false">
-                                <li>
-                                    <a href="<?= base_url(); ?>Settings/classprogramform_head">Create Class Program</a>
-                                </li>
-                                <li>
-                                    <a href="<?= base_url('Settings/classprogram_list') ?>">Schedules</a>
-                                </li>
-
-                                <li>
-                                    <!-- <a href="<?= base_url('Masterlist/enrolledListPH') ?>"></a> -->
-                                </li>
-
-                                <?php if (!empty($firstCourse)): ?>
-                                    <li>
-                                        <a href="<?= base_url('Settings/Subjects?Course=' . urlencode($firstCourse->CourseDescription) . '&Major=' . urlencode($firstCourse->Major)); ?>">
-                                            Subjects
-                                        </a>
-                                    </li>
-                                <?php endif; ?>
-
-                            </ul>
-                        </li>
-
-
-
-
-                        <li>
-                            <a href="<?= base_url(); ?>Student/evaluationPH" class=" waves-effect">
-                                <i class="ion ion-md-paper"> </i>
-                                <span> Evaluation </span>
-
-                            </a>
-
-                        </li>
-
-
-                    <?php endif; ?>
-
                     <li>
-                        <a href="<?= base_url(); ?>Page/announcement?id=<?php echo $this->session->userdata('username'); ?>" class="waves-effect">
-                            <i class="bi bi-megaphone"></i>
-                            <span> Announcement </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?= base_url('activities'); ?>" class="waves-effect">
-                            <i class="ion bi bi-qr-code-scan"></i>
-                            <span> Activities (QR) </span>
+                        <a href="<?= site_url('student/my_qr'); ?>" class="waves-effect" title="My QR Code">
+                            <i class="bi bi-qr-code"></i>
+                            <span> My QR Code </span>
                         </a>
                     </li>
 
                     <li>
                         <a href="javascript: void(0);" class="waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> To Do </span>
+                            <i class="ion ion-md-settings"></i>
+                            <span> User Settings </span>
                             <span class="menu-arrow"></span>
                         </a>
                         <ul class="nav-second-level" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>ToDo/">ToDo</a></li>
-                        </ul>
-                    </li>
+                            <li><a href="<?= base_url('Page/changeDP?id=' . urlencode($this->session->userdata('username'))); ?>">Change Profile Picture</a></li>
 
-
-                    <li>
-                        <a href="<?= base_url(); ?>Calendar/" target="_blank" class=" waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> Calendar </span>
-
-                        </a>
-
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Note/" class=" waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> Notes </span>
-
-                        </a>
-
-                    </li>
-
-
-
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                            <span> Change Password </span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-        <?php elseif ($this->session->userdata('level') === 'Librarian'): ?>
-            <div id="sidebar-menu">
-                <ul class="metismenu" id="side-menu">
-
-                    <li class="menu-title">Navigation</li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/library" class="waves-effect">
-                            <i class="ion-md-speedometer"></i>
-                            <span> Dashboard </span>
-                        </a>
-                    </li>
-
-
-
-                    <li>
-                        <a href="<?= base_url(); ?>Library/Books" class="waves-effect">
-                            <i class=" ion ion-ios-document"></i>
-                            <span> Cataloging </span>
-                        </a>
-                    </li>
-                    <!-- <li>
-                    <a href="javascript: void(0);" class="waves-effect">
-                        <i class=" ion ion-ios-photos"></i>
-                        <span>  Circulation  </span>
-						<span class="menu-arrow"></span>
-                    </a>
-                    <ul class="nav-second-level" aria-expanded="false">
-                        <li><a href="<?= base_url(); ?>Library/borrow">Borrow</a></li>
-						<li><a href="<?= base_url(); ?>Library/returnbooks">Return</a></li>
-                    </ul>
-                </li> -->
-                    <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class=" ion ion-md-settings"></i>
-                            <span> Settings </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>Library/author">Author</a></li>
-                            <li><a href="<?= base_url(); ?>Library/category">Category</a></li>
-                            <li><a href="<?= base_url(); ?>Library/location">Location</a></li>
-                            <li><a href="<?= base_url(); ?>Library/publisher">Publisher</a></li>
-                        </ul>
-                    </li>
-                    <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class=" ion ion-ios-paper"></i>
-                            <span> Reports </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>Library/reportsAllBooks">All Books</a></li>
+                            <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
                         </ul>
                     </li>
 
                     <li>
-                        <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                            <span> Change Password </span>
+                        <a href="<?= base_url('Login/logout'); ?>" class="waves-effect logout-confirm">
+                            <i class="ion bi bi-box-arrow-right"></i>
+                            <span> Logout </span>
                         </a>
                     </li>
                 </ul>
             </div>
 
-        <?php elseif ($this->session->userdata('level') === 'Guidance'): ?>
-            <div id="sidebar-menu">
-                <ul class="metismenu" id="side-menu">
-
-                    <li class="menu-title">Navigation</li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/guidance" class="waves-effect">
-                            <i class="ion-md-speedometer"></i>
-                            <span> Dashboard </span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/incidents" class="waves-effect">
-                            <i class="ion ion-md-alert"></i>
-                            <span> Incidents </span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/counselling" class="waves-effect">
-                            <i class="ion ion-ios-analytics"></i>
-                            <span> Counselling </span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                            <span> Change Password </span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-        <?php elseif ($this->session->userdata('level') === 'HR Admin'): ?>
+        <?php else: ?>
             <div id="sidebar-menu">
                 <ul class="metismenu" id="side-menu">
                     <li class="menu-title">Navigation</li>
-
                     <li>
-                        <a href="<?= base_url(); ?>Page/hr" class="waves-effect">
-                            <i class="ion-md-speedometer"></i>
+                        <a href="<?= base_url('Page/admin'); ?>" class="waves-effect">
+                            <i class="bi bi-house-door"></i>
                             <span> Dashboard </span>
                         </a>
                     </li>
-
                     <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class="ion ion-md-contact "> </i>
-                            <span> Personnel </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>Page/employeeList">Faculty and Staff</a></li>
-                            <li><a href="<?= base_url(); ?>Instructor/employeeList">Faculty Loading</a></li>
-                            <li><a href="#">Summary by Position</a></li>
-                            <li><a href="#">Summary by Department</a></li>
-                        </ul>
-                    </li>
-
-                    <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> To Do </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>ToDo/">ToDo</a></li>
-                        </ul>
-                    </li>
-
-
-                    <!-- <li>
-                        <a href="<?= base_url(); ?>Calendar/" target="_blank" class=" waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> Calendar </span>
-
-                        </a>
-
-                    </li> -->
-
-                    <li>
-                        <a href="<?= base_url(); ?>Note/" class=" waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> Notes </span>
-
-                        </a>
-
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                            <span> Change Password </span>
+                        <a href="<?= base_url('Login/logout'); ?>" class="waves-effect logout-confirm">
+                            <i class="ion bi bi-box-arrow-right"></i>
+                            <span> Logout </span>
                         </a>
                     </li>
                 </ul>
             </div>
-
-        <?php elseif ($this->session->userdata('level') === 'Property Custodian') : ?>
-            <div id="sidebar-menu">
-                <ul class="metismenu" id="side-menu">
-
-                    <li class="menu-title">Navigation</li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/p_custodian" class="waves-effect">
-                            <i class="ion ion-md-home"></i>
-                            <span> Dashboard </span>
-                        </a>
-                    </li>
-
-
-                    <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class=" ion ion-ios-podium"></i>
-                            <span> Inventory </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-
-                        <ul class="nav-second-level nav" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>Page/inventoryList">Item List</a></li>
-
-                        </ul>
-                    </li>
-
-                    <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class=" ion ion-ios-podium"></i>
-                            <span> Settings </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-
-                        <ul class="nav-second-level nav" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>Settings/brand">Brands</a></li>
-                            <li><a href="<?= base_url(); ?>Settings/category">Category</a></li>
-                            <li><a href="<?= base_url(); ?>Settings/office">Office</a></li>
-                        </ul>
-                    </li>
-
-                    <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> To Do </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>ToDo/">ToDo</a></li>
-                        </ul>
-                    </li>
-
-
-                    <!-- <li>
-                        <a href="<?= base_url(); ?>Calendar/" target="_blank" class=" waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> Calendar </span>
-
-                        </a>
-
-                    </li> -->
-
-                    <li>
-                        <a href="<?= base_url(); ?>Note/" class=" waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> Notes </span>
-
-                        </a>
-
-                    </li>
-
-                </ul>
-
-                <ul>
-
-                </ul>
-                </li>
-
-
-                </ul>
-
-            </div>
-            <!-- End Sidebar -->
-
-
-        <?php elseif ($this->session->userdata('level') === 'School Nurse'): ?>
-            <div id="sidebar-menu">
-                <ul class="metismenu" id="side-menu">
-
-                    <li class="menu-title">Navigation</li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/medical" class="waves-effect">
-                            <i class="ion-md-speedometer"></i>
-                            <span> Dashboard </span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/medInfo" class="waves-effect">
-                            <i class="ion ion-md-medical "></i>
-                            <span> Medical Info </span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/medRecords" class="waves-effect">
-                            <i class="ion ion-md-medkit "></i>
-                            <span> Medical Records </span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> To Do </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level" aria-expanded="false">
-                            <li><a href="<?= base_url(); ?>ToDo/">ToDo</a></li>
-                        </ul>
-                    </li>
-
-
-                    <!-- <li>
-                        <a href="<?= base_url(); ?>Calendar/" target="_blank" class=" waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> Calendar </span>
-
-                        </a>
-
-                    </li> -->
-
-                    <li>
-                        <a href="<?= base_url(); ?>Note/" class=" waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> Notes </span>
-
-                        </a>
-
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
-                            <i class=" ion bi bi-shield-lock"></i>
-                            <span> Change Password </span>
-                        </a>
-                    </li>
-                </ul>
-            </div>
-
-
-
-        <?php elseif ($this->session->userdata('level') === 'Super Admin'): ?>
-            <div id="sidebar-menu">
-                <ul class="metismenu" id="side-menu">
-                    <li class="menu-title">Navigation</li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/superAdmin" class="waves-effect">
-                            <i class="ion-md-speedometer"></i>
-                            <span> Dashboard </span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="<?= base_url(); ?>Page/school_info" class="waves-effect">
-                            <i class="ion ion-md-folder-open"></i>
-                            <span> School Info </span>
-                        </a>
-                    </li>
-                    <li>
-                        <a href="<?= base_url(); ?>Settings/view_logs" class="waves-effect">
-                            <i class="ion ion-md-folder-open"></i>
-                            <span> User Logs </span>
-                        </a>
-                    </li>
-
-
-
-                    <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class="ion ion-md-paper"> </i>
-                            <span> School Settings </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level" aria-expanded="false">
-                            <li><a href="<?= base_url('OnlineSettings'); ?>">On/Off Online Payment</a></li>
-                            <!-- <li><a href="<?= base_url('OnlineSettings/OnlinePaymentSettings'); ?>">Online Payment Settings</a></li> -->
-                            <!-- <li><a href="#">LMS Settings</a></li> -->
-                        </ul>
-                    </li>
-
-
-
-
-
-
-
-                </ul>
-
-            </div>
-
 
         <?php endif; ?>
 
@@ -1762,67 +1229,230 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
 </div>
 
 <script>
-(function () {
-    if (window.__logoutConfirmInitialized) {
-        return;
-    }
-    window.__logoutConfirmInitialized = true;
-
-    function handleLogoutClick(event) {
-        event.preventDefault();
-        var targetUrl = this.getAttribute('href');
-        var proceed = function () {
-            window.location.href = targetUrl;
-        };
-
-        if (window.Swal && typeof window.Swal.fire === 'function') {
-            window.Swal.fire({
-                title: 'Log out?',
-                text: 'You will be logged out of your account.',
-                icon: 'warning',
-                showCancelButton: true,
-                confirmButtonText: 'Yes, log out',
-                cancelButtonText: 'Cancel',
-                confirmButtonColor: '#348cd4',
-                cancelButtonColor: '#6c757d'
-            }).then(function (result) {
-                var confirmed = false;
-                if (result) {
-                    if (typeof result.isConfirmed !== 'undefined') {
-                        confirmed = result.isConfirmed;
-                    } else if (typeof result.value !== 'undefined') {
-                        confirmed = !!result.value;
-                    } else if (result === true) {
-                        confirmed = true;
-                    }
-                }
-                if (confirmed) {
-                    proceed();
-                }
-            });
-        } else if (window.confirm('Are you sure you want to log out?')) {
-            proceed();
-        }
-    }
-
-    function bindLogoutConfirm() {
-        var links = document.querySelectorAll('.logout-confirm');
-        if (!links.length) {
-            return;
-        }
-        Array.prototype.forEach.call(links, function (link) {
-            if (link.__logoutConfirmBound) {
+    (function() {
+        function runAccordion() {
+            var menu = document.getElementById('side-menu');
+            if (!menu) {
                 return;
             }
-            link.__logoutConfirmBound = true;
-            link.addEventListener('click', handleLogoutClick);
-        });
-    }
 
-    if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', bindLogoutConfirm);
-    } else {
-        bindLogoutConfirm();
-    }
-})();
+            function getDirectChildByTag(parent, tagName) {
+                tagName = tagName.toUpperCase();
+                for (var i = 0; i < parent.children.length; i++) {
+                    if (parent.children[i].tagName === tagName) {
+                        return parent.children[i];
+                    }
+                }
+                return null;
+            }
+
+            function setExpandedState(li, expanded) {
+                var toggle = getDirectChildByTag(li, 'A');
+                if (toggle) {
+                    toggle.setAttribute('aria-expanded', expanded ? 'true' : 'false');
+                }
+            }
+
+            function collapseItem(li) {
+                var submenu = getDirectChildByTag(li, 'UL');
+                if (!submenu) {
+                    return;
+                }
+                submenu.classList.remove('mm-show');
+                submenu.style.display = 'none';
+                submenu.style.height = '';
+                submenu.style.overflow = '';
+                li.classList.remove('mm-open');
+                if (!li.hasAttribute('data-keep-active')) {
+                    li.classList.remove('mm-active');
+                }
+                setExpandedState(li, false);
+            }
+
+            function expandItem(li) {
+                var submenu = getDirectChildByTag(li, 'UL');
+                if (!submenu) {
+                    return;
+                }
+                submenu.classList.add('mm-show');
+                submenu.style.display = 'block';
+                submenu.style.height = '';
+                submenu.style.overflow = '';
+                li.classList.add('mm-open');
+                li.classList.add('mm-active');
+                setExpandedState(li, true);
+            }
+
+            function collapseSiblings(li) {
+                var parent = li.parentNode;
+                if (!parent) {
+                    return;
+                }
+                for (var i = 0; i < parent.children.length; i++) {
+                    var sibling = parent.children[i];
+                    if (sibling === li || sibling.tagName !== 'LI') {
+                        continue;
+                    }
+                    sibling.removeAttribute('data-keep-active');
+                    collapseItem(sibling);
+                }
+            }
+
+            function openParentChain(li) {
+                var current = li.parentNode;
+                while (current && current !== menu) {
+                    if (current.tagName === 'UL') {
+                        var parentLi = current.parentNode;
+                        if (parentLi && parentLi.tagName === 'LI') {
+                            expandItem(parentLi);
+                            parentLi.setAttribute('data-keep-active', '1');
+                        }
+                    }
+                    current = current.parentNode;
+                }
+            }
+
+            var toggleTargets = [];
+            var allLis = menu.getElementsByTagName('li');
+            for (var idx = 0; idx < allLis.length; idx++) {
+                var li = allLis[idx];
+                var submenu = getDirectChildByTag(li, 'UL');
+                var toggleLink = getDirectChildByTag(li, 'A');
+                if (!submenu || !toggleLink) {
+                    continue;
+                }
+
+                li.removeAttribute('data-keep-active');
+
+                var record = {
+                    li: li,
+                    link: toggleLink,
+                    submenu: submenu,
+                    shouldOpen: li.classList.contains('mm-active') || li.classList.contains('mm-open') || submenu.classList.contains('mm-show')
+                };
+
+                toggleTargets.push(record);
+            }
+
+            for (var j = 0; j < toggleTargets.length; j++) {
+                collapseItem(toggleTargets[j].li);
+            }
+
+            for (var k = 0; k < toggleTargets.length; k++) {
+                if (toggleTargets[k].shouldOpen) {
+                    expandItem(toggleTargets[k].li);
+                    toggleTargets[k].li.setAttribute('data-keep-active', '1');
+                    openParentChain(toggleTargets[k].li);
+                }
+            }
+
+            for (var m = 0; m < toggleTargets.length; m++) {
+                (function(item) {
+                    if (item.link.getAttribute('data-toggle-bound') === '1') {
+                        return;
+                    }
+                    item.link.setAttribute('data-toggle-bound', '1');
+
+                    item.link.addEventListener('click', function(event) {
+                        var submenu = getDirectChildByTag(item.li, 'UL');
+                        if (!submenu) {
+                            return;
+                        }
+                        event.preventDefault();
+
+                        var isOpen = submenu.classList.contains('mm-show') || item.li.classList.contains('mm-open');
+                        if (isOpen) {
+                            item.li.removeAttribute('data-keep-active');
+                            collapseItem(item.li);
+                        } else {
+                            collapseSiblings(item.li);
+                            expandItem(item.li);
+                            item.li.setAttribute('data-keep-active', '1');
+                            openParentChain(item.li);
+                        }
+                    });
+                })(toggleTargets[m]);
+            }
+        }
+
+        function scheduleRun() {
+            runAccordion();
+            setTimeout(runAccordion, 50);
+            setTimeout(runAccordion, 200);
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', scheduleRun);
+        } else {
+            scheduleRun();
+        }
+
+        window.addEventListener('load', scheduleRun);
+    })();
+</script>
+
+<script>
+    (function() {
+        if (window.__logoutConfirmInitialized) {
+            return;
+        }
+        window.__logoutConfirmInitialized = true;
+
+        function handleLogoutClick(event) {
+            event.preventDefault();
+            var targetUrl = this.getAttribute('href');
+            var proceed = function() {
+                window.location.href = targetUrl;
+            };
+
+            if (window.Swal && typeof window.Swal.fire === 'function') {
+                window.Swal.fire({
+                    title: 'Log out?',
+                    text: 'You will be logged out of your account.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, log out',
+                    cancelButtonText: 'Cancel',
+                    confirmButtonColor: '#348cd4',
+                    cancelButtonColor: '#6c757d'
+                }).then(function(result) {
+                    var confirmed = false;
+                    if (result) {
+                        if (typeof result.isConfirmed !== 'undefined') {
+                            confirmed = result.isConfirmed;
+                        } else if (typeof result.value !== 'undefined') {
+                            confirmed = !!result.value;
+                        } else if (result === true) {
+                            confirmed = true;
+                        }
+                    }
+                    if (confirmed) {
+                        proceed();
+                    }
+                });
+            } else if (window.confirm('Are you sure you want to log out?')) {
+                proceed();
+            }
+        }
+
+        function bindLogoutConfirm() {
+            var links = document.querySelectorAll('.logout-confirm');
+            if (!links.length) {
+                return;
+            }
+            Array.prototype.forEach.call(links, function(link) {
+                if (link.__logoutConfirmBound) {
+                    return;
+                }
+                link.__logoutConfirmBound = true;
+                link.addEventListener('click', handleLogoutClick);
+            });
+        }
+
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', bindLogoutConfirm);
+        } else {
+            bindLogoutConfirm();
+        }
+    })();
 </script>
