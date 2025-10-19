@@ -92,19 +92,10 @@ $sitioVal    = $pickField(['Sitio', 'sitio', 'SitioPresent', 'sitioPresent']);
     <div class="content-page">
         <div class="content">
 
-            <?php if ($this->session->flashdata('success')) : ?>
-                <?= '<div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                    </button>'.$this->session->flashdata('success').'</div>'; ?>
-            <?php endif; ?>
-
-            <?php if ($this->session->flashdata('danger')) : ?>
-                <?= '<div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-                    <span aria-hidden="true">&times;</span>
-                    </button>'.$this->session->flashdata('danger').'</div>'; ?>
-            <?php endif; ?>
+            <?php
+                $flashSuccess = $this->session->flashdata('success');
+                $flashDanger  = $this->session->flashdata('danger');
+            ?>
 
             <div class="container-fluid">
                 <!-- title -->
@@ -276,6 +267,19 @@ $sitioVal    = $pickField(['Sitio', 'sitio', 'SitioPresent', 'sitioPresent']);
 $(function () {
     $('#province, #city, #barangay').select2({ width: '100%' });
 
+    function notifyError(message) {
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            window.Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: message,
+                confirmButtonColor: '#348cd4'
+            });
+        } else {
+            window.alert(message);
+        }
+    }
+
    const savedProvince = <?= json_encode($provinceVal) ?>;
 const savedCity     = <?= json_encode($cityVal) ?>;
 const savedBrgy     = <?= json_encode($brgyVal) ?>;
@@ -327,7 +331,7 @@ function loadProvinces() {
                 enable('#barangay', false);
             }
         },
-        error: function (_x, _s, err) { alert("Error loading provinces: " + err); }
+        error: function (_x, _s, err) { notifyError("Error loading provinces: " + err); }
     });
 }
 
@@ -342,7 +346,7 @@ function loadCities(province, done) {
             fillOptions($city, data, 'City', 'City', 'Select City/Municipality');
             if (typeof done === 'function') done();
         },
-        error: function (_x, _s, err) { alert("Error loading cities: " + err); }
+        error: function (_x, _s, err) { notifyError("Error loading cities: " + err); }
     });
 }
 
@@ -357,7 +361,7 @@ function loadBarangays(city, done) {
             fillOptions($brgy, data, 'Brgy', 'Brgy', 'Select Barangay');
             if (typeof done === 'function') done();
         },
-        error: function (_x, _s, err) { alert("Error loading barangays: " + err); }
+        error: function (_x, _s, err) { notifyError("Error loading barangays: " + err); }
     });
 }
 
@@ -395,6 +399,43 @@ $('#city').on('change', function () {
 
     loadProvinces();
 });
+</script>
+<script>
+(function () {
+    var successMessage = <?= json_encode($flashSuccess ?? null); ?>;
+    var dangerMessage  = <?= json_encode($flashDanger ?? null); ?>;
+
+    if (!successMessage && !dangerMessage) {
+        return;
+    }
+
+    var options = null;
+    if (dangerMessage) {
+        options = {
+            icon: 'error',
+            title: 'Error',
+            text: dangerMessage,
+            confirmButtonColor: '#348cd4'
+        };
+    } else if (successMessage) {
+        options = {
+            icon: 'success',
+            title: 'Success',
+            text: successMessage,
+            confirmButtonColor: '#348cd4'
+        };
+    }
+
+    if (!options) {
+        return;
+    }
+
+    if (window.Swal && typeof window.Swal.fire === 'function') {
+        window.Swal.fire(options);
+    } else if (options.text) {
+        window.alert(options.text);
+    }
+})();
 </script>
 </body>
 </html>

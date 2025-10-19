@@ -27,9 +27,13 @@
 
         <!-- Start Content-->
         <div class="container-fluid">
-          <?php if ($this->session->flashdata('msg')): ?>
-            <?= $this->session->flashdata('msg'); ?>
-          <?php endif; ?>
+          <?php
+            $flashMsgRaw = $this->session->flashdata('msg');
+            $flashSuccess = $this->session->flashdata('success');
+            $flashError = $this->session->flashdata('error');
+            $flashInfo = $this->session->flashdata('info');
+            $flashMsg = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
+          ?>
 
           <!-- start page title -->
           <div class="row">
@@ -103,10 +107,14 @@
 
 
                                 <!-- <a href=<?= base_url(); ?>Settings/studentsprofile><button type="button" class="btn btn-success btn-xs">Update</button></a> -->
-                                <a href="<?= base_url(); ?>Settings/deleteCourse?id=<?php echo $row->courseid; ?>" onclick="return confirm('Are you sure you want to delete this record?');"><button type="button" class="btn btn-danger btn-xs">Delete</button></a>
-                              </td>
-                              </td>
-                            <?php } ?>
+                                <a href="<?= base_url(); ?>Settings/deleteCourse?id=<?= $row->courseid; ?>"
+                                  class="btn btn-danger btn-xs course-delete-btn"
+                                  data-delete-url="<?= base_url(); ?>Settings/deleteCourse?id=<?= $row->courseid; ?>"
+                                  data-course-name="<?= htmlspecialchars($row->CourseDescription, ENT_QUOTES, 'UTF-8'); ?>">
+                                  <i class="mdi mdi-delete-forever"></i> Delete
+                                </a>
+                          </td>
+                        <?php } ?>
                         </tbody>
 
                       </table>
@@ -127,55 +135,6 @@
       </div>
 
       <!-- end container-fluid -->
-      <!-- Confirmation Modal -->
-      <div class="modal fade" id="confirmationModal" tabindex="-1" role="dialog" aria-labelledby="confirmationModalLabel" aria-hidden="true">
-        <div class="modal-dialog" role="document">
-          <div class="modal-content">
-            <div class="modal-header">
-              <h5 class="modal-title" id="confirmationModalLabel">Delete Confirmation</h5>
-              <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                <span aria-hidden="true">&times;</span>
-              </button>
-            </div>
-            <div class="modal-body">
-              <div class="text-center">
-                <div class="circle-with-stroke d-inline-flex justify-content-center align-items-center">
-                  <span class="h1 text-danger">!</span>
-                </div>
-                <p class="mt-3">Are you sure you want to delete this data?</p>
-              </div>
-            </div>
-            <div class="modal-footer">
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-              <a href="<?= base_url('Settings/Deleteethnicity?id=' . $row->id); ?>); ?>" class="btn btn-danger" onclick="deleteData()">Delete</a>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <style>
-        .circle-with-stroke {
-          width: 100px;
-          height: 100px;
-          border: 4px solid #dc3545;
-          border-radius: 50%;
-        }
-      </style>
-
-      <script>
-        var deleteUrl = "";
-
-        function setDeleteUrl(url) {
-          deleteUrl = url;
-        }
-
-        function deleteData() {
-          // Proceed with deletion
-          window.location.href = deleteUrl;
-        }
-      </script>
-
-
     </div>
     <!-- end content -->
 
@@ -329,10 +288,123 @@
   <script src="<?= base_url(); ?>assets/libs/datatables/responsive.bootstrap4.min.js"></script>
 
   <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.keyTable.min.js"></script>
-  <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.select.min.js"></script>
+<script src="<?= base_url(); ?>assets/libs/datatables/dataTables.select.min.js"></script>
 
   <!-- Datatables init -->
   <script src="<?= base_url(); ?>assets/js/pages/datatables.init.js"></script>
+
+  <script>
+    (function () {
+      function showAlert(options) {
+        if (!options) {
+          return Promise.resolve();
+        }
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+          return window.Swal.fire(options);
+        }
+        if (options.text) {
+          window.alert(options.text);
+        }
+        return Promise.resolve();
+      }
+
+      var flashData = {
+        error: <?= json_encode($flashError ?? null); ?>,
+        success: <?= json_encode($flashSuccess ?? null); ?>,
+        info: <?= json_encode($flashInfo ?? null); ?>,
+        legacy: <?= json_encode($flashMsg ?? null); ?>
+      };
+
+      var alertOptions = null;
+      if (flashData.error) {
+        alertOptions = {
+          icon: 'error',
+          title: 'Error',
+          text: flashData.error,
+          confirmButtonColor: '#348cd4'
+        };
+      } else if (flashData.success) {
+        alertOptions = {
+          icon: 'success',
+          title: 'Success',
+          text: flashData.success,
+          confirmButtonColor: '#348cd4'
+        };
+      } else if (flashData.info) {
+        alertOptions = {
+          icon: 'info',
+          title: 'Notice',
+          text: flashData.info,
+          confirmButtonColor: '#348cd4'
+        };
+      } else if (flashData.legacy) {
+        alertOptions = {
+          icon: 'info',
+          title: 'Notice',
+          text: flashData.legacy,
+          confirmButtonColor: '#348cd4'
+        };
+      }
+
+      if (alertOptions) {
+        showAlert(alertOptions);
+      }
+
+      function closestByClass(element, className) {
+        while (element && element !== document) {
+          if (element.classList && element.classList.contains(className)) {
+            return element;
+          }
+          element = element.parentNode;
+        }
+        return null;
+      }
+
+      document.addEventListener('click', function (event) {
+        var trigger = closestByClass(event.target, 'course-delete-btn');
+        if (!trigger) {
+          return;
+        }
+        event.preventDefault();
+
+        var deleteUrl = trigger.getAttribute('data-delete-url') || trigger.getAttribute('href');
+        if (!deleteUrl) {
+          return;
+        }
+        var courseName = trigger.getAttribute('data-course-name') || 'this course';
+        var message = 'Delete ' + courseName + '? This cannot be undone.';
+
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+          window.Swal.fire({
+            title: 'Delete course?',
+            text: message,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, delete',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#f1556c',
+            cancelButtonColor: '#6c757d'
+          }).then(function (result) {
+            var confirmed = false;
+            if (result) {
+              if (typeof result.isConfirmed !== 'undefined') {
+                confirmed = result.isConfirmed;
+              } else if (typeof result.value !== 'undefined') {
+                confirmed = !!result.value;
+              } else if (result === true) {
+                confirmed = true;
+              }
+            }
+            if (confirmed) {
+              window.location.href = deleteUrl;
+            }
+          });
+        } else if (window.confirm(message)) {
+          window.location.href = deleteUrl;
+        }
+      });
+    })();
+  </script>
 
  <script>
         $(document).ready(function() {

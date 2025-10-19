@@ -158,9 +158,18 @@ function edit_signup_url($id) {
         fireAlert(alertOptions);
     }
 
-    function handleDeleteClick(event) {
+    function closestByClass(element, className) {
+        while (element && element !== document) {
+            if (element.classList && element.classList.contains(className)) {
+                return element;
+            }
+            element = element.parentNode;
+        }
+        return null;
+    }
+
+    function handleDeleteClick(event, button) {
         event.preventDefault();
-        var button = event.currentTarget;
         var form = button.closest('form');
         if (!form) {
             return;
@@ -200,12 +209,13 @@ function edit_signup_url($id) {
         }
     }
 
-    var deleteButtons = document.querySelectorAll('.delete-signup-btn');
-    if (deleteButtons.length) {
-        Array.prototype.forEach.call(deleteButtons, function (button) {
-            button.addEventListener('click', handleDeleteClick);
-        });
-    }
+    document.addEventListener('click', function (event) {
+        var button = closestByClass(event.target, 'delete-signup-btn');
+        if (!button) {
+            return;
+        }
+        handleDeleteClick(event, button);
+    });
 })();
 </script>
 </body>
