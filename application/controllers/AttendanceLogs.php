@@ -19,7 +19,7 @@ public function index()
     $date        = trim((string)$this->input->get('date'));      // YYYY-MM-DD (optional)
     $session     = trim((string)$this->input->get('session'));   // am|pm|eve (optional)
 
-    // ❶ Get active SY/Sem (fallback to settings if session is empty)
+    // Get active SY/Sem (fallback to settings if session is empty)
     $active = $this->db->select('active_sy, active_sem')
                        ->from('settings')
                        ->order_by('settingsID','DESC')->limit(1)
@@ -67,23 +67,29 @@ public function index()
         }
     }
 
-    // ❷ Build Section dropdown from semesterstude for the active SY/Sem
-    $secQB = $this->db->select("DISTINCT TRIM(ss.Section) AS section", false)
-                      ->from('semesterstude ss')
-                      ->where("ss.Section IS NOT NULL", null, false)
-                      ->where("TRIM(ss.Section) <> ''", null, false);
-    if ($use_sy)  $secQB->where('ss.SY', $use_sy);
-    if ($use_sem) $secQB->where('ss.Semester', $use_sem);
-    $data['sections'] = $secQB->order_by('ss.Section','ASC')->get()->result();
+    // Section / Year Level dropdowns from course sections master list (ensures manual selection)
+    $data['sections'] = $this->db
+        ->select('DISTINCT cs.section, cs.year_level, COALESCE(ct.CourseCode, ct.CourseDescription) AS course_code', false)
+        ->from('course_sections cs')
+        ->where('cs.is_active', 1)
+        ->join('course_table ct', 'ct.courseid = cs.courseid', 'left')
+        ->order_by('ct.CourseCode', 'ASC')
+        ->where('cs.section IS NOT NULL', null, false)
+        ->where("TRIM(cs.section) <> ''", null, false)
+        ->order_by('cs.year_level', 'ASC')
+        ->order_by('cs.section', 'ASC')
+        ->get()
+        ->result();
 
-    // Year level dropdown (same scope as sections)
-    $yrQB = $this->db->select("DISTINCT TRIM(ss.YearLevel) AS year_level", false)
-                     ->from('semesterstude ss')
-                     ->where("ss.YearLevel IS NOT NULL", null, false)
-                     ->where("TRIM(ss.YearLevel) <> ''", null, false);
-    if ($use_sy)  $yrQB->where('ss.SY', $use_sy);
-    if ($use_sem) $yrQB->where('ss.Semester', $use_sem);
-    $data['year_levels'] = $yrQB->order_by('ss.YearLevel','ASC')->get()->result();
+    $data['year_levels'] = $this->db
+        ->select('DISTINCT cs.year_level', false)
+        ->from('course_sections cs')
+        ->where('cs.is_active', 1)
+        ->where('cs.year_level IS NOT NULL', null, false)
+        ->where("TRIM(cs.year_level) <> ''", null, false)
+        ->order_by('cs.year_level', 'ASC')
+        ->get()
+        ->result();
 
     $this->load->view('attendance_logs_index', $data);
 }

@@ -18,6 +18,8 @@ class Page extends CI_Controller
 		$this->load->model('OnlineSettingsModel');
 		$this->load->vars(['online_settings' => $this->OnlineSettingsModel->get_setting()]);
     $this->load->model('StudentModel'); 
+	        $this->load->model('CourseSectionModel');
+
 		if ($this->session->userdata('logged_in') !== TRUE) {
 			redirect('login');
 		}
@@ -6217,4 +6219,88 @@ $updatedData = [
     $this->load->view('profile_form_update', $result);
 }
 
+
+
+	public function manageSections()
+	{
+		// Fetch all sections and available courses for the modal dropdown
+		$data['sections']   = $this->CourseSectionModel->getAllSections();
+		$data['courses']    = $this->CourseSectionModel->getCourses();
+		$data['yearLevels'] = $this->CourseSectionModel->getYearLevels();
+
+		if (empty($data['yearLevels'])) {
+			$defaults = ['1st', '2nd', '3rd', '4th'];
+			$data['yearLevels'] = array_map(static function ($lvl) {
+				return (object)['year_level' => $lvl];
+			}, $defaults);
+		}
+
+		$this->load->view('manage_sections', $data);
+	}
+
+	public function addSection() {
+        if ($this->input->post()) {
+            // Get data from the form
+            $sectionData = [
+                'courseid'   => $this->input->post('courseid'),
+                'year_level' => $this->input->post('year_level'),
+            'section'    => $this->input->post('section'),
+            'is_active'  => 1
+        ];
+
+        // Insert data into the database
+        $this->CourseSectionModel->addSection($sectionData);
+        redirect('Page/manageSections');
+		} else {
+			// Rare direct GET access to addSection: reload manage sections with data
+			$data['sections']   = $this->CourseSectionModel->getAllSections();
+			$data['courses']    = $this->CourseSectionModel->getCourses();
+			$data['yearLevels'] = $this->CourseSectionModel->getYearLevels();
+
+			if (empty($data['yearLevels'])) {
+				$defaults = ['1st', '2nd', '3rd', '4th'];
+				$data['yearLevels'] = array_map(static function ($lvl) {
+					return (object)['year_level' => $lvl];
+				}, $defaults);
+			}
+
+			$this->load->view('manage_sections', $data);
+		}
+    }
+
+    // Edit Section
+    public function editSection($id) {
+        if ($this->input->post()) {
+            // Get updated section data from the form
+            $sectionData = [
+                'courseid'   => $this->input->post('courseid'),
+                'year_level' => $this->input->post('year_level'),
+                'section'    => $this->input->post('section')
+            ];
+
+            // Update the section in the database
+            $this->CourseSectionModel->updateSection($id, $sectionData);
+            redirect('Page/manageSections');
+		} else {
+			// Fetch section by ID for pre-filled form
+			$data['section']    = $this->CourseSectionModel->getSectionById($id);
+			$data['courses']    = $this->CourseSectionModel->getCourses();
+			$data['yearLevels'] = $this->CourseSectionModel->getYearLevels();
+
+			if (empty($data['yearLevels'])) {
+				$defaults = ['1st', '2nd', '3rd', '4th'];
+				$data['yearLevels'] = array_map(static function ($lvl) {
+					return (object)['year_level' => $lvl];
+				}, $defaults);
+			}
+
+			$this->load->view('edit_section', $data);
+		}
+    }
+
+    // Delete Section
+    public function deleteSection($id) {
+        $this->CourseSectionModel->deleteSection($id);
+        redirect('Page/manageSections');
+    }
 }

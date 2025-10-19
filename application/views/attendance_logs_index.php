@@ -35,9 +35,14 @@ $generatedDate = date('M d, Y');
 .table-hover tbody tr:hover{background:#fbfdff}
 .pill{display:inline-block;padding:.16rem .5rem;border-radius:999px;font-size:.72rem;font-weight:700;background:#e0f2fe;color:#075985;border:1px solid #bae6fd}
 
+.group-row td{background:#e2ecfd;font-weight:700;color:var(--ink);font-size:13px}
+.group-row .group-label{display:flex;align-items:center;gap:.5rem}
+.group-row .group-label i{color:var(--brand)}
+
 /* keep layout simple on mobile without card-ification */
 @media (max-width: 767.98px){
   .toolbar{width:100%;margin-top:.5rem}
+  .table-responsive{overflow-x:auto}
 }
 
 </style>
@@ -120,13 +125,13 @@ $generatedDate = date('M d, Y');
                             <th style="min-width:110px;">Student #</th>
                             <th style="min-width:200px;">Name</th>
                             <th>Section</th>
-                            <th class="d-none d-md-table-cell">Session</th>
+                            <th>Session</th>
                             <th>Check-In</th>
-                            <th class="d-none d-sm-table-cell">Check-Out</th>
-                            <th class="d-none d-sm-table-cell">Duration (min)</th>
-                            <th class="d-none d-lg-table-cell">Course</th>
-                            <th class="d-none d-lg-table-cell">Year</th>
-                            <th class="d-none d-xl-table-cell">Checked-In By</th>
+                            <th>Check-Out</th>
+                            <th>Duration (min)</th>
+                            <th>Course</th>
+                            <th>Year</th>
+                            <th>Checked-In By</th>
                           </tr>
                         </thead>
                         <tbody>
@@ -138,13 +143,13 @@ $generatedDate = date('M d, Y');
                               <td><?= h($r->student_number) ?></td>
                               <td><?= h($r->student_name) ?></td>
                               <td><?= h($r->section) ?></td>
-                              <td class="d-none d-md-table-cell"><span class="pill"><?= strtoupper(h($r->session)) ?></span></td>
+                              <td><span class="pill"><?= strtoupper(h($r->session)) ?></span></td>
                               <td><?= h(fmt_time_ampm($r->checked_in_at)) ?></td>
-                              <td class="d-none d-sm-table-cell"><?= h(fmt_time_ampm($r->checked_out_at)) ?></td>
-                              <td class="d-none d-sm-table-cell"><?= $mins ?></td>
-                              <td class="d-none d-lg-table-cell"><?= h($r->course) ?></td>
-                              <td class="d-none d-lg-table-cell"><?= h($r->YearLevel) ?></td>
-                              <td class="d-none d-xl-table-cell"><?= h($r->checked_in_by) ?></td>
+                              <td><?= h(fmt_time_ampm($r->checked_out_at)) ?></td>
+                              <td><?= $mins ?></td>
+                              <td><?= h($r->course) ?></td>
+                              <td><?= h($r->YearLevel) ?></td>
+                              <td><?= h($r->checked_in_by) ?></td>
                             </tr>
                           <?php endforeach; ?>
                         </tbody>
@@ -192,8 +197,15 @@ $generatedDate = date('M d, Y');
               <label class="small text-muted">Section</label>
               <select name="section" class="form-control select2" data-placeholder="All sections">
                 <option value="">All sections</option>
-                <?php if (!empty($sections)): foreach ($sections as $s): $sec = (string)($s->section ?? ''); if ($sec==='') continue; ?>
-                  <option value="<?= h($sec) ?>" <?= (($section ?? '') === $sec ? 'selected' : '') ?>><?= h($sec) ?></option>
+                <?php if (!empty($sections)): foreach ($sections as $s):
+                    $sec = trim((string)($s->section ?? '')); if ($sec==='') continue;
+                    $year = trim((string)($s->year_level ?? ''));
+                    $course = trim((string)($s->course_code ?? ''));
+                    $labelParts = array_filter([$course, $year, $sec], function($v){ return $v !== ''; });
+                    $label = implode(' • ', $labelParts) ?: $sec;
+                    $selected = (($section ?? '') === $sec) ? 'selected' : '';
+                ?>
+                  <option value="<?= h($sec) ?>" data-year="<?= h($year) ?>" data-course="<?= h($course) ?>" <?= $selected ?>><?= h($label) ?></option>
                 <?php endforeach; endif; ?>
               </select>
             </div>
@@ -253,6 +265,10 @@ $generatedDate = date('M d, Y');
 <script>
 $(function(){
   var $table = $('#logsTable');
+  var $filterModal = $('#filterModal');
+  var $sectionSelect = $filterModal.find('select[name="section"]');
+  var $yearSelect = $filterModal.find('select[name="year_level"]');
+  var originalSectionOptions = $sectionSelect.find('option').clone();
 
   // DataTable (minimal UI), hide global search, use our Student # search only
   var dt = $table.DataTable({
@@ -260,7 +276,8 @@ $(function(){
     responsive: false,   // sticky headers behave nicer
     autoWidth: false,
     ordering: true,
-    order: [[4,'desc']], // Check-In desc (5th col)
+    orderFixed: [[2,'asc']],
+    order: [[2,'asc'],[4,'desc']], // Section asc then Check-In desc
     searching: true,
     lengthChange: false,
     info: false,
@@ -268,14 +285,81 @@ $(function(){
     dom: 'lrtip'         // hide the built-in global search
   });
 
+  // Section grouping
+  dt.on('draw', function(){
+    var api = dt.api();
+    var rows = api.rows({ page: 'current' }).nodes();
+    var last = null;
+    var colCount = api.columns().nodes().length;
+
+    $('#logsTable tbody tr.group-row').remove();
+
+    api.column(2, { page: 'current' }).data().each(function(section, i){
+      section = section || 'Unassigned';
+      if (last !== section) {
+        $(rows).eq(i).before(
+          '<tr class="group-row"><td colspan="' + colCount + '"><span class="group-label"><i class="bi bi-people-fill"></i>Section: ' + $('<div>').text(section).html() + '</span></td></tr>'
+        );
+        last = section;
+      }
+    });
+  });
+  dt.draw();
+
   // Student # search: column 0 only
   $('#studentSearch').on('keyup change', function(){
     dt.column(0).search(this.value).draw();
   });
 
+  function refreshSectionOptions(year) {
+    var current = $sectionSelect.val();
+    var hasSelect2 = $sectionSelect.hasClass('select2-hidden-accessible');
+
+    $sectionSelect.find('option').remove();
+    originalSectionOptions.each(function(){
+      var $opt = $(this).clone();
+      var optVal = ($opt.val() || '').toString();
+      var optYear = ($opt.data('year') || '').toString();
+
+      if (optVal === '' || !year || optYear === '' || optYear === year) {
+        $sectionSelect.append($opt);
+      }
+    });
+
+    if (current) {
+      var hasValue = false;
+      $sectionSelect.find('option').each(function(){
+        if ($(this).val() === current) { hasValue = true; return false; }
+      });
+      if (hasValue) {
+        $sectionSelect.val(current);
+      } else if (year) {
+        $sectionSelect.val('');
+      }
+    } else if (year) {
+      $sectionSelect.val('');
+    }
+
+    if (hasSelect2) {
+      $sectionSelect.trigger('change.select2');
+    }
+  }
+
+  // align sections immediately if filters pre-selected
+  refreshSectionOptions($yearSelect.val());
+
   // Filters modal
-  $('#openFilters').on('click', function(){ $('#filterModal').modal('show'); });
-  $('#filterModal').on('shown.bs.modal', function(){ $(this).find('.select2').select2({ width:'100%' }); });
+  $('#openFilters').on('click', function(){ $filterModal.modal('show'); });
+  $filterModal.on('shown.bs.modal', function(){
+    $(this).find('.select2').select2({ width:'100%' });
+    // ensure select options are aligned with current year selection
+    refreshSectionOptions($yearSelect.val());
+  });
+
+  $yearSelect.on('change', function(){
+    refreshSectionOptions($(this).val());
+  });
+
 });
 </script>
 

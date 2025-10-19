@@ -61,7 +61,7 @@
                   <div class="clearfix">
 
                     <div class="float-left">
-                      <h5 style="text-transform:uppercase"><strong>COURSES</strong>
+                      <h5 style="text-transform:uppercase"><strong>Manage Courses</strong>
                         <br /><span class="badge badge-purple mb-3">SY <?php echo $this->session->userdata('sy'); ?> <?php echo $this->session->userdata('semester'); ?></span>
                       </h5>
                     </div>
@@ -101,7 +101,6 @@
                                   View Subjects
                                 </a> -->
 
-                                <a href="<?= base_url('Settings/SectionsList?Course=' . urlencode($row->CourseDescription) . '&Major=' . urlencode($row->Major)); ?>" class="btn btn-info waves-effect waves-light btn-sm">Sections</a>
 
                                 <!-- <a href=<?= base_url(); ?>Settings/studentsprofile><button type="button" class="btn btn-success btn-xs">Update</button></a> -->
                                 <a href="<?= base_url(); ?>Settings/deleteCourse?id=<?php echo $row->courseid; ?>" onclick="return confirm('Are you sure you want to delete this record?');"><button type="button" class="btn btn-danger btn-xs">Delete</button></a>
@@ -238,7 +237,7 @@
                     <input type="text" class="form-control" name="SeriesYear" placeholder="">
                   </div>
                 </div>
-           <div class="form-group row">
+           <!-- <div class="form-group row">
   <label for="ProgramHead" class="col-md-4 col-form-label">Program Head</label>
   <div class="col-md-8">
     <select class="form-control select2" name="IDNumber" id="IDNumber">
@@ -250,7 +249,7 @@
       <?php endforeach; ?>
     </select>
   </div>
-</div>
+</div> -->
 
 
 

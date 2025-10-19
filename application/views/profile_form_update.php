@@ -109,19 +109,28 @@ $sitioVal    = $pickField(['Sitio', 'sitio', 'SitioPresent', 'sitioPresent']);
             <div class="container-fluid">
                 <!-- title -->
                 <div class="row">
+                    
                     <div class="col-md-12">
                         <div class="page-title-box">
+                            
                             <h4 class="page-title">UPDATE PROFILE</h4>
+                            
                             <div class="page-title-right">
+                                
                                 <ol class="breadcrumb p-0 m-0">
                                     <li class="breadcrumb-item"><a href="#">Home</a></li>
                                     <li class="breadcrumb-item"><a href="#">Update Student</a></li>
                                     <li class="breadcrumb-item"><a href="#"></a></li>
                                 </ol>
                             </div>
+                            
                             <div class="clearfix"></div>
+                          
                             <hr style="border:0;height:2px;background:linear-gradient(to right,#4285F4 60%,#FBBC05 80%,#34A853 100%);border-radius:1px;margin:20px 0;" />
+                               <a href="<?= base_url('Page/profileList'); ?>" class="btn btn-secondary"> Back </a>
                         </div>
+
+                        
                     </div>
                 </div>
 

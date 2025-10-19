@@ -8,11 +8,15 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
 ?>
 
 
-
 <div class="left-side-menu">
     <div class="slimscroll-menu">
         <!-- System Administrator -->
        <?php if ($this->session->userdata('level') === 'Admin'): ?>
+    <?php
+        $currentUri = trim(uri_string(), '/');
+        $segment1   = strtolower($this->uri->segment(1) ?? '');
+        $segment2   = strtolower($this->uri->segment(2) ?? '');
+    ?>
     <div id="sidebar-menu">
         <ul class="metismenu" id="side-menu">
 
@@ -84,15 +88,19 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
               $flagPath = APPPATH . 'cache' . DIRECTORY_SEPARATOR . 'qr_poster_mode.flag';
               $posterModeGlobal = (is_file($flagPath) && strtolower(trim(@file_get_contents($flagPath))) === 'on');
               $isAdmin = ($this->session->userdata('level') === 'Admin');
+              $activitiesOpen = ($segment1 === 'activities');
+              $activitiesExpand = $activitiesOpen ? 'true' : 'false';
+              $activitiesShow = $activitiesOpen ? 'mm-show' : '';
+              $activitiesActive = $activitiesOpen ? 'mm-active' : '';
             ?>
-            <li>
-              <a href="javascript:void(0);" class="waves-effect">
+            <li class="<?= $activitiesActive; ?>">
+              <a href="javascript:void(0);" class="waves-effect has-arrow" aria-expanded="<?= $activitiesExpand; ?>">
                 <i class="ion bi bi-qr-code-scan"></i>
                 <span> Activities (QR) </span>
                 <span class="menu-arrow"></span>
               </a>
-              <ul class="nav-second-level" aria-expanded="false">
-                <li><a href="<?= base_url('activities'); ?>">Open Activities</a></li>
+              <ul class="nav-second-level <?= $activitiesShow; ?>" aria-expanded="<?= $activitiesExpand; ?>">
+                <li class="<?= $activitiesOpen ? 'active' : ''; ?>"><a href="<?= base_url('activities'); ?>">Open Activities</a></li>
 
                 <?php if ($isAdmin): ?>
                   <li class="pt-1 pb-2 px-3">
@@ -140,17 +148,60 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                     <span> Notes </span>
                 </a>
             </li> -->
-  <li>
-                        <a href="javascript: void(0);" class="waves-effect">
-                            <i class="ion ion-md-contacts "></i>
-                            <span> Manage Users </span>
-                            <span class="menu-arrow"></span>
-                        </a>
-                        <ul class="nav-second-level" aria-expanded="false">
-                               <li><a href="<?= base_url(); ?>Settings/Department">Course & Section</a></li>
-                            <li><a href="<?= base_url(); ?>Page/userAccounts">User Accounts</a></li>
-                        </ul>
-                    </li>
+            <?php
+            $manageMatch = static function (array $prefixes) use ($currentUri) {
+                foreach ($prefixes as $prefix) {
+                    $prefix = trim($prefix, '/');
+                    if ($prefix !== '' && stripos($currentUri, $prefix) === 0) {
+                        return true;
+                    }
+                }
+                return false;
+            };
+            $manageTargets = [
+                'Settings/Department',
+                'Settings/department',
+                'Page/manageSections',
+                'Page/addSection',
+                'Page/editSection',
+                'Page/userAccounts'
+            ];
+            $manageOpen   = $manageMatch($manageTargets);
+            $manageExpand = $manageOpen ? 'true' : 'false';
+            $manageShow   = $manageOpen ? 'mm-show' : '';
+            $manageActive = $manageOpen ? 'mm-active mm-open' : '';
+            ?>
+            
+<li class="<?= $manageActive; ?>">
+    <a href="javascript: void(0);" class="waves-effect has-arrow" aria-expanded="<?= $manageExpand; ?>">
+        <i class="ion ion-md-contacts"></i>
+        <span> Manage  </span>
+        <span class="menu-arrow"></span>
+    </a>
+    <ul class="nav-second-level <?= $manageShow; ?>" aria-expanded="<?= $manageExpand; ?>">
+        <?php
+        $isCourseActive   = stripos($currentUri, trim('Settings/Department', '/')) === 0;
+        $sectionPrefixes  = ['Page/manageSections', 'Page/addSection', 'Page/editSection'];
+        $isSectionActive  = $manageMatch($sectionPrefixes);
+        $isUserActive     = stripos($currentUri, trim('Page/userAccounts', '/')) === 0;
+
+        $courseLinkClass  = $isCourseActive ? 'active' : '';
+        $sectionLinkClass = $isSectionActive ? 'active' : '';
+        $userLinkClass    = $isUserActive ? 'active' : '';
+        ?>
+        <li>
+            <a class="<?= $courseLinkClass; ?>" href="<?= base_url('Settings/Department'); ?>"> Course </a>
+        </li>
+          <!-- Manage Sections -->
+        <li>
+            <a class="<?= $sectionLinkClass; ?>" href="<?= base_url('Page/manageSections'); ?>"> Sections </a>
+        </li>
+        <li>
+            <a class="<?= $userLinkClass; ?>" href="<?= base_url('Page/userAccounts'); ?>"> User Accounts </a>
+        </li>
+    </ul>
+</li>
+
             <!-- Change Password (keep visible) -->
             <li>
                 <a href="<?= base_url(); ?>Page/changepassword" class="waves-effect">
