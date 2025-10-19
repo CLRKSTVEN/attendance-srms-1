@@ -17,18 +17,10 @@ function edit_signup_url($id) {
     <div class="content">
       <div class="container-fluid">
 
-        <?php if ($this->session->flashdata('success')): ?>
-          <div class="alert alert-success alert-dismissible fade show">
-            <?= $this->session->flashdata('success'); ?>
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-          </div>
-        <?php endif; ?>
-        <?php if ($this->session->flashdata('danger')): ?>
-          <div class="alert alert-danger alert-dismissible fade show">
-            <?= $this->session->flashdata('danger'); ?>
-            <button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>
-          </div>
-        <?php endif; ?>
+        <?php
+          $flashSuccess = $this->session->flashdata('success');
+          $flashDanger  = $this->session->flashdata('danger');
+        ?>
 
         <div class="row">
           <div class="col-md-12">
@@ -65,7 +57,7 @@ function edit_signup_url($id) {
                     if ($fullname==='' && !empty($row->StudentNumber)) $fullname = $row->StudentNumber;
 
                     $studno = $row->StudentNumber ?? '';
-                    $bdate  = !empty($row->birthDate) ? $row->birthDate : '—';
+                    $bdate  = !empty($row->birthDate) ? $row->birthDate : 'N/A';
                     $yl     = $row->yearLevel ?? '';
                     $sec    = $row->section ?? '';
                     $stat   = $row->signupStatus ?? '';
@@ -92,15 +84,14 @@ function edit_signup_url($id) {
                         $canDelete = in_array($role, array_map('strtolower',$allowed), true);
                       ?>
                       <?php if ($canDelete): ?>
-                        <form method="post" action="<?= base_url('Page/deleteSignup'); ?>" style="display:inline"
-                              onsubmit="return confirm('Delete <?= htmlspecialchars($studno,ENT_QUOTES,'UTF-8'); ?>? This cannot be undone.');">
+                        <form method="post" action="<?= base_url('Page/deleteSignup'); ?>" style="display:inline" class="delete-signup-form">
                           <input type="hidden" name="id" value="<?= htmlspecialchars($studno, ENT_QUOTES, 'UTF-8'); ?>">
-                          <button type="submit" class="btn btn-danger btn-xs">
+                          <button type="button" class="btn btn-danger btn-xs delete-signup-btn" data-studno="<?= htmlspecialchars($studno, ENT_QUOTES, 'UTF-8'); ?>">
                             <i class="mdi mdi-delete-forever"></i> Delete
                           </button>
                         </form>
                       <?php else: ?>
-                        <span class="text-muted">—</span>
+                        <span class="text-muted">&mdash;</span>
                       <?php endif; ?>
                     </td>
                   </tr>
@@ -120,6 +111,7 @@ function edit_signup_url($id) {
 
 <!-- Vendor / DataTables -->
 <script src="<?= base_url(); ?>assets/js/vendor.min.js"></script>
+<script src="<?= base_url(); ?>assets/libs/sweetalert2/sweetalert2.min.js"></script>
 <link  href="<?= base_url(); ?>assets/libs/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
 <link  href="<?= base_url(); ?>assets/libs/datatables/responsive.bootstrap4.min.css" rel="stylesheet" />
 <script src="<?= base_url(); ?>assets/libs/datatables/jquery.dataTables.min.js"></script>
@@ -127,5 +119,94 @@ function edit_signup_url($id) {
 <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.responsive.min.js"></script>
 <script src="<?= base_url(); ?>assets/libs/datatables/responsive.bootstrap4.min.js"></script>
 <script>$(function(){ $('#datatable').DataTable(); });</script>
+<script>
+(function () {
+    var successMessage = <?= json_encode($flashSuccess ?? null); ?>;
+    var dangerMessage = <?= json_encode($flashDanger ?? null); ?>;
+
+    function fireAlert(options) {
+        if (!options) {
+            return;
+        }
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            return window.Swal.fire(options);
+        }
+        if (options.text) {
+            window.alert(options.text);
+        }
+        return Promise.resolve();
+    }
+
+    var alertOptions = null;
+    if (dangerMessage) {
+        alertOptions = {
+            icon: 'error',
+            title: 'Error',
+            text: dangerMessage,
+            confirmButtonColor: '#348cd4'
+        };
+    } else if (successMessage) {
+        alertOptions = {
+            icon: 'success',
+            title: 'Success',
+            text: successMessage,
+            confirmButtonColor: '#348cd4'
+        };
+    }
+
+    if (alertOptions) {
+        fireAlert(alertOptions);
+    }
+
+    function handleDeleteClick(event) {
+        event.preventDefault();
+        var button = event.currentTarget;
+        var form = button.closest('form');
+        if (!form) {
+            return;
+        }
+        var studno = button.getAttribute('data-studno') || 'this record';
+        var promptText = 'Delete ' + studno + '? This cannot be undone.';
+
+        var confirmed = function (result) {
+            var ok = false;
+            if (result) {
+                if (typeof result.isConfirmed !== 'undefined') {
+                    ok = result.isConfirmed;
+                } else if (typeof result.value !== 'undefined') {
+                    ok = !!result.value;
+                } else if (result === true) {
+                    ok = true;
+                }
+            }
+            if (ok) {
+                form.submit();
+            }
+        };
+
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+            window.Swal.fire({
+                title: 'Delete record?',
+                text: promptText,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, delete',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#f1556c',
+                cancelButtonColor: '#6c757d'
+            }).then(confirmed);
+        } else if (window.confirm(promptText)) {
+            form.submit();
+        }
+    }
+
+    var deleteButtons = document.querySelectorAll('.delete-signup-btn');
+    if (deleteButtons.length) {
+        Array.prototype.forEach.call(deleteButtons, function (button) {
+            button.addEventListener('click', handleDeleteClick);
+        });
+    }
+})();
+</script>
 </body>
 </html>
