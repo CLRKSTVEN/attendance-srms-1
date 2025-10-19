@@ -1439,8 +1439,136 @@ function student()
 		$this->load->view('profile_page', $result);
 	}
 
+	public function myProfile()
+	{
+		$level = (string)$this->session->userdata('level');
+		if (!in_array($level, ['Student', 'Stude Applicant'], true)) {
+			show_error('Access Denied', 403);
+		}
 
+		$studentNumber = trim((string)$this->session->userdata('username'));
+		if ($studentNumber === '') {
+			redirect('Login');
+			return;
+		}
 
+		$this->ensure_student_profile_exists($studentNumber);
+
+		$bundle = $this->StudentModel->getMyProfileBundle($studentNumber);
+
+		$courses = $this->StudentModel->get_courseTable();
+		$courseLookup = [];
+		foreach ($courses as $course) {
+			$courseLookup[(int)$course->courseid] = $course;
+		}
+
+		$currentCourseDesc = trim((string)($bundle->enrollment->Course ?? $bundle->profile->course ?? ''));
+		$currentYear       = trim((string)($bundle->enrollment->YearLevel ?? $bundle->profile->yearLevel ?? ''));
+		$currentSection    = trim((string)($bundle->enrollment->Section ?? $bundle->profile->section ?? ''));
+		$yearLevels        = ['1st', '2nd', '3rd', '4th'];
+
+		if ($this->input->method() === 'post') {
+			$form = $this->input->post(null, true);
+
+			$firstName  = strtoupper(trim((string)($form['FirstName'] ?? '')));
+			$middleName = strtoupper(trim((string)($form['MiddleName'] ?? '')));
+			$lastName   = strtoupper(trim((string)($form['LastName'] ?? '')));
+			$nameExtn   = strtoupper(trim((string)($form['nameExtn'] ?? '')));
+			$email      = trim((string)($form['email'] ?? ''));
+			$contactNo  = trim((string)($form['contactNo'] ?? ''));
+			$birthDate  = trim((string)($form['birthDate'] ?? ''));
+			$age        = trim((string)($form['age'] ?? ''));
+
+			$accountData = [
+				'fName' => $firstName,
+				'mName' => $middleName,
+				'lName' => $lastName,
+				'email' => $email
+			];
+
+			$profileData = [
+				'FirstName'   => $firstName,
+				'MiddleName'  => $middleName,
+				'LastName'    => $lastName,
+				'nameExtn'    => $nameExtn,
+				'Sex'         => trim((string)($form['Sex'] ?? '')),
+				'birthDate'   => $birthDate,
+				'age'         => $age,
+				'contactNo'   => $contactNo,
+				'email'       => $email,
+				'nationality' => trim((string)($form['nationality'] ?? 'Filipino')),
+				'working'     => trim((string)($form['working'] ?? 'No')),
+				'VaccStat'    => trim((string)($form['VaccStat'] ?? ''))
+			];
+
+			$courseDesc = '';
+			if (!empty($form['Course1'])) {
+				$courseDesc = trim((string)$form['Course1']);
+			} elseif (!empty($form['course_id'])) {
+				$courseId = (int)$form['course_id'];
+				if (isset($courseLookup[$courseId])) {
+					$courseDesc = trim((string)$courseLookup[$courseId]->CourseDescription);
+				}
+			} elseif ($currentCourseDesc !== '') {
+				$courseDesc = $currentCourseDesc;
+			}
+
+			$yearLevel = trim((string)($form['yearLevel'] ?? $form['YearLevel'] ?? ''));
+			$section   = trim((string)($form['section'] ?? $form['Section'] ?? ''));
+
+			$enrollmentData = [];
+			if ($courseDesc !== '') {
+				$enrollmentData['Course'] = $courseDesc;
+				$profileData['course']    = $courseDesc;
+			}
+			if ($yearLevel !== '') {
+				$enrollmentData['YearLevel'] = $yearLevel;
+				$profileData['yearLevel']    = $yearLevel;
+			}
+			if ($section !== '') {
+				$enrollmentData['Section'] = $section;
+			}
+
+			$save = $this->StudentModel->updateMyProfileBundle(
+				$studentNumber,
+				$accountData,
+				$profileData,
+				$enrollmentData,
+				[
+					'semstudentid' => $bundle->enrollment->semstudentid ?? null,
+					'sy'           => $this->session->userdata('sy'),
+					'semester'     => $this->session->userdata('semester')
+				]
+			);
+
+			if (!empty($save['success'])) {
+				$this->session->set_userdata('fName', $firstName);
+				$this->session->set_userdata('mName', $middleName);
+				$this->session->set_userdata('lName', $lastName);
+				if ($email !== '') {
+					$this->session->set_userdata('email', $email);
+				}
+				$this->session->set_flashdata('success', 'Your profile was updated.');
+			} else {
+				$this->session->set_flashdata('danger', 'We could not save your changes. Please try again.');
+			}
+
+			redirect('Page/myProfile');
+			return;
+		}
+
+		$data = [
+			'bundle'            => $bundle,
+			'courses'           => $courses,
+			'yearLevels'        => $yearLevels,
+			'currentCourseDesc' => $currentCourseDesc,
+			'currentYear'       => $currentYear,
+			'currentSection'    => $currentSection,
+			'sexOptions'        => ['Female', 'Male']
+		];
+
+		$this->load->view('student_my_profile', $data);
+	}
 	public function studentsprofile2()
 	{
 		$userLevel = $this->session->userdata('level');
@@ -1519,7 +1647,12 @@ private function ensure_student_profile_exists($id)
     $exists = $this->db->select('StudentNumber')
                        ->get_where('studeprofile', ['StudentNumber' => $id], 1)
                        ->row();
-    if ($exists) return;
+    if ($exists) {
+        return;
+    }
+
+    $settingsRow = $this->db->select('settingsID')->limit(1)->get('o_srms_settings')->row();
+    $settingsID  = $settingsRow->settingsID ?? 1;
 
     // try source 1: studentsignup
     $src = $this->db->get_where('studentsignup', ['StudentNumber' => $id], 1)->row();
@@ -1527,85 +1660,86 @@ private function ensure_student_profile_exists($id)
         // try source 2: o_users
         $src = $this->db->get_where('o_users', ['username' => $id], 1)->row();
         if ($src) {
-            // map o_users → studeprofile minimal fields
             $payload = [
                 'StudentNumber' => $src->IDNumber ?: $src->username,
                 'FirstName'     => $src->fName ?? '',
                 'MiddleName'    => $src->mName ?? '',
                 'LastName'      => $src->lName ?? '',
                 'email'         => $src->email ?? '',
+                'ethnicity'     => '',
+                'working'       => 'No',
+                'VaccStat'      => '',
+                'nationality'   => 'Filipino',
+                'course'        => '',
+                'Major'         => '',
+                'yearLevel'     => '',
+                'settingsID'    => $settingsID
             ];
             $this->db->insert('studeprofile', $payload);
-            return;
         }
-        // no source found; nothing we can seed
         return;
     }
 
-    // map studentsignup → studeprofile (more complete)
-    $settingsRow = $this->db->select('settingsID')->get('o_srms_settings')->row();
-    $settingsID  = $settingsRow->settingsID ?? 1;
-
     $payload = [
-        'StudentNumber'      => $src->StudentNumber,
-        'FirstName'          => $src->FirstName,
-        'MiddleName'         => $src->MiddleName,
-        'LastName'           => $src->LastName,
-        'nameExtn'           => $src->nameExtn,
-        'Sex'                => $src->Sex,
-        'birthDate'          => $src->birthDate,
-        'age'                => $src->age,
-        'BirthPlace'         => $src->BirthPlace,
-        'contactNo'          => $src->contactNo,
-        'email'              => $src->email,
-        'CivilStatus'        => $src->CivilStatus,
-        'ethnicity'          => $src->ethnicity,
-        'Religion'           => $src->Religion,
-        'working'            => $src->working,
-        'VaccStat'           => $src->VaccStat,
-        'province'           => $src->province,
-        'city'               => $src->city,
-        'brgy'               => $src->brgy,
-        'sitio'              => $src->sitio,
-        'course'             => $src->Course1,
-        'Major'              => $src->Major1,
-        'occupation'         => $src->occupation,
-        'salary'             => $src->salary,
-        'employer'           => $src->employer,
-        'employerAddress'    => $src->employerAddress,
-        'graduationDate'     => $src->graduationDate,
-        'guardian'           => $src->guardian,
-        'guardianRelationship'=> $src->guardianRelationship,
-        'guardianContact'    => $src->guardianContact,
-        'guardianAddress'    => $src->guardianAddress,
-        'spouse'             => $src->spouse,
-        'spouseRelationship' => $src->spouseRelationship,
-        'spouseContact'      => $src->spouseContact,
-        'children'           => $src->children,
-        'imagePath'          => $src->imagePath,
-        'yearLevel'          => $src->yearLevel,
-        'father'             => $src->father,
-        'fOccupation'        => $src->fOccupation,
-        'fatherAddress'      => $src->fatherAddress,
-        'fatherContact'      => $src->fatherContact,
-        'mother'             => $src->mother,
-        'mOccupation'        => $src->mOccupation,
-        'motherAddress'      => $src->motherAddress,
-        'motherContact'      => $src->motherContact,
-        'disability'         => $src->disability,
-        'parentsMonthly'     => $src->parentsMonthly,
-        'elementary'         => $src->elementary,
-        'elementaryAddress'  => $src->elementaryAddress,
-        'elemGraduated'      => $src->elemGraduated,
-        'secondary'          => $src->secondary,
-        'secondaryAddress'   => $src->secondaryAddress,
-        'secondaryGraduated' => $src->secondaryGraduated,
-        'vocational'         => $src->vocational,
-        'vocationalAddress'  => $src->vocationalAddress,
-        'vocationalGraduated'=> $src->vocationalGraduated,
-        'vocationalCourse'   => $src->vocationalCourse,
-        'nationality'        => $src->nationality,
-        'settingsID'         => $settingsID
+        'StudentNumber'       => $src->StudentNumber,
+        'FirstName'           => $src->FirstName ?? '',
+        'MiddleName'          => $src->MiddleName ?? '',
+        'LastName'            => $src->LastName ?? '',
+        'nameExtn'            => $src->nameExtn ?? '',
+        'Sex'                 => $src->Sex ?? '',
+        'birthDate'           => $src->birthDate ?? '',
+        'age'                 => $src->age ?? '',
+        'BirthPlace'          => $src->BirthPlace ?? '',
+        'contactNo'           => $src->contactNo ?? '',
+        'email'               => $src->email ?? '',
+        'CivilStatus'         => $src->CivilStatus ?? '',
+        'ethnicity'           => $src->ethnicity ?? '',
+        'Religion'            => $src->Religion ?? '',
+        'working'             => $src->working ?? 'No',
+        'VaccStat'            => $src->VaccStat ?? '',
+        'province'            => $src->province ?? '',
+        'city'                => $src->city ?? '',
+        'brgy'                => $src->brgy ?? '',
+        'sitio'               => $src->sitio ?? '',
+        'course'              => $src->Course1 ?? '',
+        'Major'               => $src->Major1 ?? '',
+        'occupation'          => $src->occupation ?? '',
+        'salary'              => $src->salary ?? '',
+        'employer'            => $src->employer ?? '',
+        'employerAddress'     => $src->employerAddress ?? '',
+        'graduationDate'      => $src->graduationDate ?? '',
+        'guardian'            => $src->guardian ?? '',
+        'guardianRelationship'=> $src->guardianRelationship ?? '',
+        'guardianContact'     => $src->guardianContact ?? '',
+        'guardianAddress'     => $src->guardianAddress ?? '',
+        'spouse'              => $src->spouse ?? '',
+        'spouseRelationship'  => $src->spouseRelationship ?? '',
+        'spouseContact'       => $src->spouseContact ?? '',
+        'children'            => $src->children ?? '',
+        'imagePath'           => $src->imagePath ?? '',
+        'yearLevel'           => $src->yearLevel ?? '',
+        'father'              => $src->father ?? '',
+        'fOccupation'         => $src->fOccupation ?? '',
+        'fatherAddress'       => $src->fatherAddress ?? '',
+        'fatherContact'       => $src->fatherContact ?? '',
+        'mother'              => $src->mother ?? '',
+        'mOccupation'         => $src->mOccupation ?? '',
+        'motherAddress'       => $src->motherAddress ?? '',
+        'motherContact'       => $src->motherContact ?? '',
+        'disability'          => $src->disability ?? '',
+        'parentsMonthly'      => $src->parentsMonthly ?? '0',
+        'elementary'          => $src->elementary ?? '',
+        'elementaryAddress'   => $src->elementaryAddress ?? '',
+        'elemGraduated'       => $src->elemGraduated ?? '',
+        'secondary'           => $src->secondary ?? '',
+        'secondaryAddress'    => $src->secondaryAddress ?? '',
+        'secondaryGraduated'  => $src->secondaryGraduated ?? '',
+        'vocational'          => $src->vocational ?? '',
+        'vocationalAddress'   => $src->vocationalAddress ?? '',
+        'vocationalGraduated' => $src->vocationalGraduated ?? '',
+        'vocationalCourse'    => $src->vocationalCourse ?? '',
+        'nationality'         => $src->nationality ?? 'Filipino',
+        'settingsID'          => $settingsID
     ];
 
     $this->db->insert('studeprofile', $payload);

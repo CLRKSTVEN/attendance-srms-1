@@ -115,7 +115,7 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                             <?php if ($isAdmin): ?>
                                 <li class="pt-1 pb-2 px-3">
                                     <div class="d-flex align-items-center justify-content-between">
-                                        <span class="text-muted">Poster Mode</span>
+                                        <span class="text-muted"> Poster Mode </span>
                                         <div class="custom-control custom-switch m-0">
                                             <input
                                                 type="checkbox"
@@ -1164,11 +1164,12 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                     </li>
 
                     <li>
-                        <a href="<?= base_url('Page/studentsprofile?id=' . $this->session->userdata('username')); ?>" class="waves-effect">
-                            <i class="ion ion-md-contact"></i>
+                        <a href="<?= base_url('Page/myProfile'); ?>" class="waves-effect">
+                            <i class="mdi mdi-account-circle-outline"></i>
                             <span> My Profile </span>
                         </a>
                     </li>
+
 
                     <li>
                         <a href="<?= site_url('student/my_qr'); ?>" class="waves-effect" title="My QR Code">

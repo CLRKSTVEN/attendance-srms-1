@@ -696,7 +696,7 @@
                           <i class="mdi mdi-minus text-white"></i>
                         </a>
                       </div>
-                      <h5 class="card-title mb-0">ANNOUNCEMENTS</h5>
+                      <h5 class="card-title mb-0" style="color: white;">ANNOUNCEMENT</h5>
                     </div>
 
                     <div id="adminAnnouncements" class="collapse show">

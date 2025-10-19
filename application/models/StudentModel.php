@@ -886,6 +886,240 @@ function totalProfile()
 	}
 
 
+	public function getMyProfileBundle($studentNumber)
+	{
+		$studentNumber = trim((string)$studentNumber);
+
+		$account = $this->db->select('username, fName, mName, lName, email, avatar, position, acctStat')
+		                    ->from('o_users')
+		                    ->where('username', $studentNumber)
+		                    ->limit(1)
+		                    ->get()
+		                    ->row();
+		if (!$account) {
+			$account = (object)[
+				'username' => $studentNumber,
+				'fName'    => '',
+				'mName'    => '',
+				'lName'    => '',
+				'email'    => '',
+				'avatar'   => '',
+				'position' => '',
+				'acctStat' => ''
+			];
+		}
+
+		$profile = $this->db->select('StudentNumber, contactNo, Sex, CivilStatus, birthDate, course, major, yearLevel')
+		                    ->from('studeprofile')
+		                    ->where('StudentNumber', $studentNumber)
+		                    ->limit(1)
+		                    ->get()
+		                    ->row();
+		if (!$profile) {
+			$profile = (object)[
+				'StudentNumber' => $studentNumber,
+				'contactNo'     => '',
+				'Sex'           => '',
+				'CivilStatus'   => '',
+				'birthDate'     => '',
+				'course'        => '',
+				'major'         => '',
+				'yearLevel'     => '',
+				'section'       => ''
+			];
+		} elseif (!property_exists($profile, 'section')) {
+			$profile->section = '';
+		}
+
+		$enrollment = $this->db->select('semstudentid, Course, Major, YearLevel, Section, Semester, SY')
+		                       ->from('semesterstude')
+		                       ->where('StudentNumber', $studentNumber)
+		                       ->order_by('semstudentid', 'DESC')
+		                       ->limit(1)
+		                       ->get()
+		                       ->row();
+		if (!$enrollment) {
+			$enrollment = (object)[
+				'semstudentid' => null,
+				'Course'       => $profile->course ?? '',
+				'Major'        => $profile->major ?? '',
+				'YearLevel'    => $profile->yearLevel ?? '',
+				'Section'      => $profile->section ?? '',
+				'Semester'     => null,
+				'SY'           => null
+			];
+		} elseif (empty($enrollment->Section) && !empty($profile->section)) {
+			$enrollment->Section = $profile->section;
+		}
+
+		return (object)[
+			'account'    => $account,
+			'profile'    => $profile,
+			'enrollment' => $enrollment
+		];
+	}
+
+
+	public function updateMyProfileBundle($studentNumber, array $accountData, array $profileData, array $enrollmentData, array $options = [])
+	{
+		$studentNumber = trim((string)$studentNumber);
+		$semstudentId  = $options['semstudentid'] ?? null;
+		$syOption      = $options['sy'] ?? null;
+		$semOption     = $options['semester'] ?? null;
+
+		$this->db->trans_start();
+
+		if (!empty($accountData)) {
+			$this->db->where('username', $studentNumber)->update('o_users', $accountData);
+		}
+
+		if (!empty($profileData)) {
+			$cleanProfileData = [];
+			foreach ($profileData as $key => $value) {
+				$cleanProfileData[$key] = ($value === null) ? '' : $value;
+			}
+			$profileData = $cleanProfileData;
+
+			$existsProfile = $this->db->select('StudentNumber')
+			                          ->from('studeprofile')
+			                          ->where('StudentNumber', $studentNumber)
+			                          ->limit(1)
+			                          ->get()
+			                          ->row();
+			if ($existsProfile) {
+				$this->db->where('StudentNumber', $studentNumber)->update('studeprofile', $profileData);
+			} else {
+				$settingsRow = $this->db->select('settingsID')->limit(1)->get('o_srms_settings')->row();
+				$settingsID  = $settingsRow->settingsID ?? 1;
+
+				$defaults = [
+					'StudentNumber'        => $studentNumber,
+					'FirstName'            => '',
+					'MiddleName'           => '',
+					'LastName'             => '',
+					'nameExtn'             => '',
+					'Sex'                  => '',
+					'birthDate'            => '',
+					'age'                  => '',
+					'BirthPlace'           => '',
+					'contactNo'            => '',
+					'email'                => '',
+					'CivilStatus'          => '',
+					'ethnicity'            => '',
+					'Religion'             => '',
+					'working'              => 'No',
+					'VaccStat'             => '',
+					'province'             => '',
+					'city'                 => '',
+					'brgy'                 => '',
+					'sitio'                => '',
+					'course'               => '',
+					'Major'                => '',
+					'occupation'           => '',
+					'salary'               => '',
+					'employer'             => '',
+					'employerAddress'      => '',
+					'graduationDate'       => '',
+					'guardian'             => '',
+					'guardianRelationship' => '',
+					'guardianContact'      => '',
+					'guardianAddress'      => '',
+					'spouse'               => '',
+					'spouseRelationship'   => '',
+					'spouseContact'        => '',
+					'children'             => '',
+					'imagePath'            => '',
+					'yearLevel'            => '',
+					'father'               => '',
+					'fOccupation'          => '',
+					'fatherAddress'        => '',
+					'fatherContact'        => '',
+					'mother'               => '',
+					'mOccupation'          => '',
+					'motherAddress'        => '',
+					'motherContact'        => '',
+					'disability'           => '',
+					'parentsMonthly'       => '0',
+					'elementary'           => '',
+					'elementaryAddress'    => '',
+					'elemGraduated'        => '',
+					'secondary'            => '',
+					'secondaryAddress'     => '',
+					'secondaryGraduated'   => '',
+					'vocational'           => '',
+					'vocationalAddress'    => '',
+					'vocationalGraduated'  => '',
+					'vocationalCourse'     => '',
+					'nationality'          => 'Filipino',
+					'settingsID'           => $settingsID
+				];
+
+				$profileInsert = array_merge($defaults, $profileData);
+				$profileInsert['StudentNumber'] = $studentNumber;
+				$this->db->insert('studeprofile', $profileInsert);
+			}
+		}
+
+		if (!empty($enrollmentData)) {
+			if ($semstudentId) {
+				$this->db->where('semstudentid', $semstudentId)
+				         ->where('StudentNumber', $studentNumber)
+				         ->update('semesterstude', $enrollmentData);
+			} else {
+				$existingEnrollment = $this->db->select('semstudentid')
+				                               ->from('semesterstude')
+				                               ->where('StudentNumber', $studentNumber)
+				                               ->order_by('semstudentid', 'DESC')
+				                               ->limit(1)
+				                               ->get()
+				                               ->row();
+				if ($existingEnrollment) {
+					$semstudentId = $existingEnrollment->semstudentid;
+					$this->db->where('semstudentid', $semstudentId)
+					         ->update('semesterstude', $enrollmentData);
+				} else {
+					$insertData = $enrollmentData;
+					$insertData['StudentNumber'] = $studentNumber;
+					if (!array_key_exists('SY', $insertData) || $insertData['SY'] === null) {
+						if ($syOption !== null) {
+							$insertData['SY'] = $syOption;
+						}
+					}
+					if (!array_key_exists('Semester', $insertData) || $insertData['Semester'] === null) {
+						if ($semOption !== null) {
+							$insertData['Semester'] = $semOption;
+						}
+					}
+					$this->db->insert('semesterstude', $insertData);
+					$semstudentId = $this->db->insert_id();
+				}
+			}
+
+			$profileSync = [];
+			if (array_key_exists('Course', $enrollmentData)) {
+				$profileSync['course'] = $enrollmentData['Course'];
+			}
+			if (array_key_exists('Major', $enrollmentData)) {
+				$profileSync['major'] = $enrollmentData['Major'];
+			}
+			if (array_key_exists('YearLevel', $enrollmentData)) {
+				$profileSync['yearLevel'] = $enrollmentData['YearLevel'];
+			}
+			if (!empty($profileSync)) {
+				$this->db->where('StudentNumber', $studentNumber)->update('studeprofile', $profileSync);
+			}
+		}
+
+		$this->db->trans_complete();
+		$success = $this->db->trans_status();
+
+		return [
+			'success'      => $success,
+			'semstudentid' => $success ? $semstudentId : null
+		];
+	}
+
+
 	//Display Staff Profile
 	function staffProfile($id)
 	{
