@@ -27,6 +27,42 @@ public function index()
     $use_sy  = $this->session->userdata('sy')       ?: ($active->active_sy  ?? null);
     $use_sem = $this->session->userdata('semester') ?: ($active->active_sem ?? null);
 
+    // Build course lookup (CourseCode -> variants) from course_table
+    $courseCatalog = $this->db->select('courseid, CourseCode, CourseDescription, Major')
+                              ->from('course_table')
+                              ->get()->result();
+    $normalizeCourseKey = static function ($value) {
+        $value = trim((string)$value);
+        if ($value === '') {
+            return '';
+        }
+        $value = preg_replace('/\s+/', ' ', $value);
+        return strtoupper($value);
+    };
+    $courseLookup = [];
+    foreach ($courseCatalog as $course) {
+        $code  = strtoupper(trim((string)$course->CourseCode));
+        if ($code === '') {
+            continue;
+        }
+        $description = trim((string)$course->CourseDescription);
+        $major       = trim((string)$course->Major);
+        $candidates  = [$code, $description, $major];
+        if ($description !== '' && $major !== '') {
+            $candidates[] = $description . ' ' . $major;
+            $candidates[] = $description . ' - ' . $major;
+            $candidates[] = $description . ' Major in ' . $major;
+            $candidates[] = $description . ' major in ' . $major;
+        }
+        foreach ($candidates as $candidate) {
+            $key = $normalizeCourseKey($candidate);
+            if ($key === '') {
+                continue;
+            }
+            $courseLookup[$key] = $code;
+        }
+    }
+
     $data = [
         'activities' => $this->db->select('activity_id, title')
                                   ->from('activities')->order_by('start_at','DESC')->get()->result(),
@@ -35,7 +71,8 @@ public function index()
         'year_level' => $yearLevel ?: '',
         'date'       => $date ?: '',
         'session'    => $session ?: '',
-        'rows'       => []
+        'rows'       => [],
+        'course_lookup' => $courseLookup,
     ];
 
     if ($activity_id > 0) {
