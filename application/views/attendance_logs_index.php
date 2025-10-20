@@ -71,6 +71,104 @@ if (!function_exists('course_acronym')) {
         return strtoupper(substr($course, 0, 8));
     }
 }
+if (!function_exists('year_level_sort_key_view')) {
+    function year_level_sort_key_view($value)
+    {
+        static $wordMap = [
+            'FIRST' => 1,
+            'SECOND' => 2,
+            'THIRD' => 3,
+            'FOURTH' => 4,
+            'FIFTH' => 5,
+            'SIXTH' => 6,
+            'SEVENTH' => 7,
+            'EIGHTH' => 8,
+            'NINTH' => 9,
+            'TENTH' => 10,
+            'ELEVENTH' => 11,
+            'TWELFTH' => 12
+        ];
+        $value = trim((string)$value);
+        if ($value === '') {
+            return [PHP_INT_MAX, ''];
+        }
+        $upper = strtoupper($value);
+        if (preg_match('/\d+/', $upper, $match)) {
+            $num = (int)$match[0];
+        } else {
+            $num = PHP_INT_MAX - 1;
+            foreach ($wordMap as $token => $rank) {
+                if (strpos($upper, $token) !== false) {
+                    $num = $rank;
+                    break;
+                }
+            }
+        }
+        return [$num, $upper];
+    }
+}
+if (!function_exists('section_sort_key_view')) {
+    function section_sort_key_view($value)
+    {
+        $value = trim((string)$value);
+        if ($value === '') {
+            return 'ZZZZ';
+        }
+        return strtoupper($value);
+    }
+}
+if (!function_exists('name_sort_key_view')) {
+    function name_sort_key_view($value)
+    {
+        $value = trim((string)$value);
+        if ($value === '') {
+            return ['ZZZZ', ''];
+        }
+        if (strpos($value, ',') !== false) {
+            [$last, $rest] = array_map('trim', explode(',', $value, 2));
+            $first = preg_replace('/\s+/', ' ', $rest);
+        } else {
+            $parts = preg_split('/\s+/', $value, -1, PREG_SPLIT_NO_EMPTY);
+            $last = array_pop($parts);
+            if ($last === null) {
+                $last = $value;
+            }
+            $first = implode(' ', $parts);
+        }
+        $lastKey = strtoupper($last);
+        $firstKey = strtoupper(trim($first));
+        return [$lastKey, $firstKey];
+    }
+}
+if (!function_exists('compare_attendance_rows_view')) {
+    function compare_attendance_rows_view($a, $b)
+    {
+        $yearA = year_level_sort_key_view($a->YearLevel ?? '');
+        $yearB = year_level_sort_key_view($b->YearLevel ?? '');
+        if ($yearA[0] !== $yearB[0]) {
+            return $yearA[0] <=> $yearB[0];
+        }
+        if ($yearA[1] !== $yearB[1]) {
+            return strcmp($yearA[1], $yearB[1]);
+        }
+        $sectionA = section_sort_key_view($a->section ?? '');
+        $sectionB = section_sort_key_view($b->section ?? '');
+        if ($sectionA !== $sectionB) {
+            return strcmp($sectionA, $sectionB);
+        }
+        $nameA = name_sort_key_view($a->student_name ?? '');
+        $nameB = name_sort_key_view($b->student_name ?? '');
+        if ($nameA[0] !== $nameB[0]) {
+            return strcmp($nameA[0], $nameB[0]);
+        }
+        if ($nameA[1] !== $nameB[1]) {
+            return strcmp($nameA[1], $nameB[1]);
+        }
+        $numA = trim((string)($a->student_number ?? ''));
+        $numB = trim((string)($b->student_number ?? ''));
+        return strcmp($numA, $numB);
+    }
+}
 $courseLookup = isset($course_lookup) && is_array($course_lookup) ? $course_lookup : [];
 $flashMsgRaw   = $this->session->flashdata('msg');
 $flashSuccess  = $this->session->flashdata('success');
@@ -206,6 +304,11 @@ $flashMsg      = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
                                                         </tr>
                                                     </thead>
                                                     <tbody>
+                                                        <?php
+                                                        if (is_array($rows) && count($rows) > 1) {
+                                                            usort($rows, 'compare_attendance_rows_view');
+                                                        }
+                                                        ?>
                                                         <?php foreach ($rows as $r):
                                                             $mins = ($r->checked_out_at && $r->checked_in_at)
                                                                 ? max(0, (int) round((strtotime($r->checked_out_at) - strtotime($r->checked_in_at)) / 60))
@@ -429,8 +532,9 @@ $flashMsg      = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
                 $table.DataTable({
                     pageLength: 25,
                     order: [
+                        [7, 'asc'],
                         [2, 'asc'],
-                        [4, 'desc']
+                        [1, 'asc']
                     ]
                 });
             }
