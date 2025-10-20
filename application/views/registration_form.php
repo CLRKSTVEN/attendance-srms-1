@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html class="bg-black">
+
 <head>
   <meta charset="UTF-8">
   <title>Attendance Portal | Registration</title>
@@ -28,33 +29,36 @@
     <div class="row">
       <div class="col-md-12">
         <div class="card">
-          <img src="<?= base_url(); ?>assets/images/REGISTRATIONHEADER.png" width="100%" class="img-responsive" alt="Registration Header"><br/>
+          <img src="<?= base_url(); ?>assets/images/REGISTRATIONHEADER.png" width="100%" class="img-responsive" alt="Registration Header"><br />
 
           <?php if ($this->session->flashdata('msg')): ?>
             <?php echo $this->session->flashdata('msg'); ?>
           <?php endif; ?>
 
           <form method="post" class="parsley-examples">
+            <?php if (strtolower((string)$this->input->get('source')) === 'admin'): ?>
+              <input type="hidden" name="source" value="admin">
+            <?php endif; ?>
             <div class="col-lg-12">
               <h4>PERSONAL INFORMATION</h4>
               <div class="row">
                 <div class="col-sm-4 form-group">
                   <label for="StudentNumber">Student ID / Number <span style="color:red;">*</span></label>
                   <input type="text"
-                         id="StudentNumber"
-                         class="form-control"
-                         name="StudentNumber"
-                         placeholder="Student ID"
-                         minlength="4"
-                         maxlength="20"
-                         pattern="[A-Za-z0-9\-]+"
-                         title="Use letters, numbers, and hyphen only."
-                         required>
+                    id="StudentNumber"
+                    class="form-control"
+                    name="StudentNumber"
+                    placeholder="Student ID"
+                    minlength="4"
+                    maxlength="20"
+                    pattern="[A-Za-z0-9\-]+"
+                    title="Use letters, numbers, and hyphen only."
+                    required>
                   <small class="form-text text-muted">This will be your username. make sure to match it to your school id.</small>
                 </div>
               </div>
               <input type="hidden" name="nationality" value="Filipino">
-              <input type="hidden" name="working"  value="No">
+              <input type="hidden" name="working" value="No">
               <input type="hidden" name="VaccStat" value="">
 
               <!-- Name (3 + 3 + 3 + 3 = 12) -->
@@ -92,7 +96,7 @@
                   <label for="bday">Birth Date <span style="color:red;">*</span></label>
                   <input type="date" id="bday" class="form-control" name="birthDate" onchange="submitBday()" required>
                 </div>
-   <div class="col-sm-3 form-group">
+                <div class="col-sm-3 form-group">
                   <label for="email">E-mail Address <span style="color:red;">*</span></label>
                   <input type="email" id="email" class="form-control" name="email" required>
                 </div>
@@ -100,13 +104,13 @@
                   <label for="contactNo">Mobile No. <span style="color:red;">*</span></label>
                   <input type="text" id="contactNo" class="form-control" name="contactNo" required>
                 </div>
-                  <!-- <label for="resultBday">Age <span style="color:red;">*</span></label> -->
-                  <input type="hidden" id="resultBday" class="form-control" name="age" readonly required autocomplete="off">
-                </div>
+                <!-- <label for="resultBday">Age <span style="color:red;">*</span></label> -->
+                <input type="hidden" id="resultBday" class="form-control" name="age" readonly required autocomplete="off">
+              </div>
 
-            
 
-             
+
+
 
               <!-- Academic (Course + Year + Section) -->
               <div class="row">
@@ -114,7 +118,9 @@
                   <label for="course1">Course/Program <span style="color:red;">*</span></label>
                   <select name="Course1" id="course1" class="form-control" required>
                     <option value="">Select Course</option>
-                    <?php foreach ($course as $row) { echo '<option value="'.htmlspecialchars($row->CourseDescription, ENT_QUOTES, 'UTF-8').'">'.htmlspecialchars($row->CourseDescription, ENT_QUOTES, 'UTF-8').'</option>'; } ?>
+                    <?php foreach ($course as $row) {
+                      echo '<option value="' . htmlspecialchars($row->CourseDescription, ENT_QUOTES, 'UTF-8') . '">' . htmlspecialchars($row->CourseDescription, ENT_QUOTES, 'UTF-8') . '</option>';
+                    } ?>
                   </select>
                 </div>
                 <div class="col-sm-4 form-group">
@@ -139,7 +145,7 @@
               </div>
               <input type="hidden" name="Major1" id="major1">
 
-     
+
               <!-- reCAPTCHA + Submit -->
               <div class="form-group">
                 <div class="g-recaptcha" data-sitekey="<?= htmlspecialchars($site_key) ?>"></div>
@@ -168,7 +174,7 @@
 
   <!-- Courses → Majors -->
   <script>
-    $(function () {
+    $(function() {
       function extractFirstMajor(optionsHtml) {
         var value = '';
         if (optionsHtml) {
@@ -193,10 +199,10 @@
           return;
         }
 
-        $course.on('change', function () {
+        $course.on('change', function() {
           var course = $(this).val();
 
-          var finalize = function () {
+          var finalize = function() {
             if (courseSelector === '#course1') {
               reloadSections();
             }
@@ -208,12 +214,14 @@
             return;
           }
 
-          $.post('<?= base_url("Registration/getMajorsByCourse") ?>', { course: course })
-            .done(function (html) {
+          $.post('<?= base_url("Registration/getMajorsByCourse") ?>', {
+              course: course
+            })
+            .done(function(html) {
               var majorValue = extractFirstMajor(html);
               $hidden.val(majorValue);
             })
-            .fail(function () {
+            .fail(function() {
               window.alert('Failed to fetch majors. Please try again.');
               $hidden.val('');
             })
@@ -228,25 +236,38 @@
 
   <!-- Province → City → Barangay -->
   <script>
-    $(function(){
-      $('#province').on('change', function(){
+    $(function() {
+      $('#province').on('change', function() {
         var province = $(this).val();
         if (province) {
-          $.post('<?= base_url("Registration/getCitiesByProvince") ?>', {province: province})
-            .done(function(html){ $('#city').html(html); $('#barangay').html('<option value="">Select Barangay</option>'); })
-            .fail(function(){ alert('Failed to fetch cities. Please try again.'); });
+          $.post('<?= base_url("Registration/getCitiesByProvince") ?>', {
+              province: province
+            })
+            .done(function(html) {
+              $('#city').html(html);
+              $('#barangay').html('<option value="">Select Barangay</option>');
+            })
+            .fail(function() {
+              alert('Failed to fetch cities. Please try again.');
+            });
         } else {
           $('#city').html('<option value="">Select City/Municipality</option>');
           $('#barangay').html('<option value="">Select Barangay</option>');
         }
       });
 
-      $('#city').on('change', function(){
+      $('#city').on('change', function() {
         var city = $(this).val();
         if (city) {
-          $.post('<?= base_url("Registration/getBarangaysByCity") ?>', {city: city})
-            .done(function(html){ $('#barangay').html(html); })
-            .fail(function(){ alert('Failed to fetch barangays. Please try again.'); });
+          $.post('<?= base_url("Registration/getBarangaysByCity") ?>', {
+              city: city
+            })
+            .done(function(html) {
+              $('#barangay').html(html);
+            })
+            .fail(function() {
+              alert('Failed to fetch barangays. Please try again.');
+            });
         } else {
           $('#barangay').html('<option value="">Select Barangay</option>');
         }
@@ -255,40 +276,42 @@
   </script>
 
   <script>
-  function reloadSections() {
-    // Your #course1 currently holds CourseDescription as the value (from StudentModel::getCourse()).
-    // We’ll send that and let the controller resolve the numeric courseid.
-    var course = $('#course1').val();   // CourseDescription (string)
-    var yl     = $('#yearLevel').val(); // '1st'..'4th'
+    function reloadSections() {
+      // Your #course1 currently holds CourseDescription as the value (from StudentModel::getCourse()).
+      // We’ll send that and let the controller resolve the numeric courseid.
+      var course = $('#course1').val(); // CourseDescription (string)
+      var yl = $('#yearLevel').val(); // '1st'..'4th'
 
-    if (!course || !yl) {
-      $('#section').html('<option value="">Select Section</option>');
-      return;
+      if (!course || !yl) {
+        $('#section').html('<option value="">Select Section</option>');
+        return;
+      }
+
+      $.post('<?= base_url("Registration/getSectionsByCourseYear") ?>', {
+            course: course,
+            yearLevel: yl
+          } // send description + year level
+        )
+        .done(function(html) {
+          $('#section').html(html || '<option value="">Select Section</option>');
+        })
+        .fail(function() {
+          alert('Failed to load sections. Please try again.');
+          $('#section').html('<option value="">Select Section</option>');
+        });
     }
 
-    $.post('<?= base_url("Registration/getSectionsByCourseYear") ?>',
-      { course: course, yearLevel: yl } // send description + year level
-    )
-    .done(function(html){
-      $('#section').html(html || '<option value="">Select Section</option>');
-    })
-    .fail(function(){
-      alert('Failed to load sections. Please try again.');
-      $('#section').html('<option value="">Select Section</option>');
+    // When Year Level or primary Course changes, reload sections
+    $(function() {
+      $('#yearLevel').on('change', reloadSections);
+      $('#course1').on('change', reloadSections);
     });
-  }
-
-  // When Year Level or primary Course changes, reload sections
-  $(function(){
-    $('#yearLevel').on('change', reloadSections);
-    $('#course1').on('change', reloadSections);
-  });
   </script>
 
   <!-- reCAPTCHA required -->
   <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <script>
-    document.querySelector('form').addEventListener('submit', function(e){
+    document.querySelector('form').addEventListener('submit', function(e) {
       if (grecaptcha.getResponse() === '') {
         e.preventDefault();
         alert('Please confirm you are not a robot.');
@@ -296,4 +319,5 @@
     });
   </script>
 </body>
+
 </html>

@@ -31,6 +31,9 @@
                   <a href="<?= base_url('Page/admin'); ?>" class="btn btn-primary btn-sm">
                     <i class="mdi mdi-arrow-left"></i> Back to Dashboard
                   </a>
+                  <a href="<?= site_url('Registration/index') . '?source=admin'; ?>" class="btn btn-success btn-sm">
+                    <i class="mdi mdi-account-plus"></i> Add Student
+                  </a>
                 </div>
                 <hr style="border:0;height:2px;background:linear-gradient(to right,#4285F4 60%,#FBBC05 80%,#34A853 100%);border-radius:1px;margin:20px 0;">
               </div>

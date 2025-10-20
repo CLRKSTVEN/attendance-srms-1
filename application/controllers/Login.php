@@ -39,8 +39,7 @@ class Login extends CI_Controller
     function login()
     {
         $result['data'] = $this->Login_model->loginImage();
-        $data['allow_signup'] = 'Yes';
-        //$this->output->cache(60);
+        $result['allow_signup'] = 'Yes';
         $this->load->view('home_page', $result);
     }
 
@@ -48,80 +47,8 @@ class Login extends CI_Controller
 
     function registration()
     {
-        $courseVal = $this->input->post('course');
-        $result['course'] = $this->StudentModel->getCourse();
-        $result['major'] = $this->StudentModel->getCourseMajor();
-        $result['province'] = $this->StudentModel->getProvince();
-        $result['city'] = $this->StudentModel->getCity();
-        $this->load->view('registration_form', $result);
-
-        if ($this->input->post('register')) {
-            $query1 = $this->db->query("SELECT *  from o_srms_settings");
-            $row = $query1->result_array();
-
-            $StudentNumber = $this->input->post('StudentNumber');
-            $FirstName = strtoupper($this->input->post('FirstName'));
-            $MiddleName = strtoupper($this->input->post('MiddleName'));
-            $LastName = strtoupper($this->input->post('LastName'));
-            $nameExtn = strtoupper($this->input->post('nameExtn'));
-            $completeName = $FirstName . ' ' . $LastName;
-            $Sex = $this->input->post('Sex');
-            $bdate = $this->input->post('bdate');
-            $BirthPlace = $this->input->post('BirthPlace');
-            $age = $this->input->post('age');
-            $contactNo = $this->input->post('contactNo');
-            $email = $this->input->post('email');
-            $date = date('Y-m-d');
-            $pass = $this->input->post('bdate');
-            $h_upass = sha1($pass);
-
-            $MobileNumber = $this->input->post('MobileNumber');
-            $CivilStatus = $this->input->post('CivilStatus');
-            $Religion = $this->input->post('Religion');
-            $ethnicity = $this->input->post('ethnicity');
-            $working = $this->input->post('working');
-            $VaccStat = $this->input->post('VaccStat');
-            $province = $this->input->post('province');
-            $city = $this->input->post('city');
-            $brgy = $this->input->post('brgy');
-            $sitio = $this->input->post('sitio');
-
-            $course = $this->input->post('Course');
-            $major = $this->input->post('Major');
-
-
-            $que = $this->db->query("select * from studeprofile where FirstName='" . $FirstName . "' and LastName='" . $LastName . "'");
-            $row = $que->num_rows();
-            if ($row) {
-                $this->session->set_flashdata('msg', '<div class="alert alert-success text-center"><b>Duplicate record!</b></div>');
-            } else {
-
-                // $que=$this->db->query("insert into users (username, password, position, fName, mName, lName, email, avatar, acctStat, dateCreated, name) values('$lrn','$h_upass','Student','$fname','$mname','$lname','$email','avatar.png','active','$date','$fname.' '.$lname ')");
-                $que1 = $this->db->query("insert into studeprofile (StudentNumber, FirstName, MiddleName, LastName, nameExtn, Sex, CivilStatus, birthDate, age, BirthPlace, contactNo, ethnicity, Religion, working, province, city, brgy, sitio, provincePresent, cityPresent, brgyPresent, sitioPresent, email, VaccStat, settingsID) values('$StudentNumber','$FirstName','$MiddleName','$LastName','$nameExtn','$Sex','$CivilStatus','$bdate','$age','$BirthPlace','$contactNo','$ethnicity','$Religion','$working','$province','$city','$brgy','$sitio','$province','$city','$brgy','$sitio','$email','$VaccStat','1')");
-                $que = $this->db->query("insert into studentsignup values('','$StudentNumber','$FirstName','$MiddleName','$LastName','For Confirmation','$date','$course','$major')");
-                $que2 = $this->db->query("insert into users values('$StudentNumber','$h_upass','Student','$FirstName','$MiddleName','$LastName','$email','avatar.png','active','$date','$completeName','$StudentNumber')");
-                echo '<script language="javascript">';
-                echo 'alert("Registration details have been submitted successfully. You will be notified via email for your login credentials after the processing of your enrollment.")';
-                echo '</script>';
-                //redirect('Login');
-
-                //      Email Notification
-                $this->load->config('email');
-                $this->load->library('email');
-                $mail_message = 'Dear ' . $FirstName . ',' . "\r\n";
-                $mail_message .= '<br><br>Thank you for signing up!' . "\r\n";
-                $mail_message .= '<br><br>You may now login to the system using <span style="color:red; font-weight:bold;">' . $StudentNumber . '</span> as your username and <span style="color:red; font-weight:bold;">' . $pass . ' </span> as your password.' . "\r\n";
-                $mail_message .= '<br><br>Thanks & Regards,';
-                $mail_message .= '<br>Attendance Portal';
-
-                $this->email->from('no-reply@lxeinfotechsolutions.com', 'School Records Management System')
-                    ->to($email)
-                    ->subject('Account Created')
-                    ->message($mail_message);
-                $this->email->send();
-                // redirect('Login');
-            }
-        }
+        $this->load->helper('url');
+        redirect('Registration/index');
     }
 
     function fetch_major()
@@ -310,24 +237,24 @@ class Login extends CI_Controller
                         redirect('page/s_principal');
                         break;
                     default:
-                        $this->session->set_flashdata('danger', 'Unauthorized access.');
+                        $this->session->set_flashdata('auth_error', 'Unauthorized access.');
                         redirect('login');
                 }
                 return;
             } else {
                 // Inactive account
                 $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
-                $this->session->set_flashdata('danger', 'Your account is not active. Please contact support.');
-                // NEW: preserve next on failure
+                $this->session->set_flashdata('auth_error', 'Your account is not active. Please contact support.');
                 redirect('login' . ($next ? ('?next=' . urlencode($next)) : ''));
+
                 return;
             }
         } else {
             // Invalid credentials
             $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
-            $this->session->set_flashdata('danger', 'The username or password is incorrect!');
-            // NEW: preserve next on failure
+            $this->session->set_flashdata('auth_error', 'The username or password is incorrect!');
             redirect('login' . ($next ? ('?next=' . urlencode($next)) : ''));
+
             return;
         }
     }

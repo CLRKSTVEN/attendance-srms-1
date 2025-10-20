@@ -394,6 +394,12 @@ function totalProfile()
 		return $query->result();
 	}
 
+	// Legacy alias used by older controllers/views
+	public function getProvince()
+	{
+		return $this->get_provinces();
+	}
+
 	public function get_cities($province = null)
 	{
 		if (!$province) {
@@ -407,6 +413,19 @@ function totalProfile()
 		$query = $this->db->get('settings_address');
 
 		return $query->result();
+	}
+
+	// Legacy alias; optional $province for compatibility
+	public function getCity($province = null)
+	{
+		if ($province) {
+			return $this->get_cities($province);
+		}
+
+		$this->db->select('AddID, City');
+		$this->db->group_by('City');
+		$this->db->order_by('City', 'ASC');
+		return $this->db->get('settings_address')->result();
 	}
 
 	// Get barangays based on selected city
