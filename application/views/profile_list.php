@@ -7,8 +7,8 @@
     <?php include('includes/top-nav-bar.php'); ?>
     <?php include('includes/sidebar.php'); ?>
     <?php
-    // Safer helper to build the edit URL
-    function edit_signup_url($id)
+    // Helper to build the view URL for a student's profile
+    function view_signup_url($id)
     {
       // Choose your preferred style; both are supported by the controller patch.
       // return site_url('Page/editSignup/' . rawurlencode($id)); // segment style
@@ -79,8 +79,8 @@
                           <td><?= htmlspecialchars($studno, ENT_QUOTES, 'UTF-8'); ?></td>
                           <td><?= htmlspecialchars($bdate, ENT_QUOTES, 'UTF-8'); ?></td>
                           <td class="text-center">
-                            <a href="<?= base_url('Page/editSignup?id=' . urlencode($studno)); ?>" class="btn btn-success btn-xs">
-                              <i class="mdi mdi-account-edit-outline"></i> Edit
+                            <a href="<?= view_signup_url($studno); ?>" class="btn btn-info btn-xs">
+                              <i class="mdi mdi-eye-outline"></i> View
                             </a>
                             <?php
                             $allowed = ['Head Registrar', 'Registrar', 'Assistant Registrar', 'Admin', 'Administrator'];

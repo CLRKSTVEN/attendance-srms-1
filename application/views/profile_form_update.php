@@ -43,6 +43,21 @@
         .select2-container .select2-selection--single{height:38px}
         .select2-selection__rendered{line-height:36px}
         .select2-selection__arrow{height:36px}
+
+        .profile-fieldset[disabled] .form-control,
+        .profile-fieldset[disabled] .form-control:focus {
+            background-color:#f8f9fa;
+            color:#243b53;
+            opacity:1;
+        }
+        .profile-fieldset[disabled] select{
+            pointer-events:none;
+        }
+        .profile-readonly-note{
+            background:#f1f5f9;
+            border-left:4px solid #348cd4;
+            color:#1b2a4e;
+        }
     </style>
 
     <script>
@@ -70,6 +85,14 @@ if (!is_object($profileData)) {
     $profileData = (object)[];
 }
 $data = $profileData;
+
+$readOnly = !empty($readOnly);
+$provinces = (isset($provinces) && is_array($provinces)) ? $provinces : [];
+$cities    = (isset($cities) && is_array($cities)) ? $cities : [];
+$barangays = (isset($barangays) && is_array($barangays)) ? $barangays : [];
+if (empty($barangays) && isset($brgy) && is_array($brgy)) {
+    $barangays = $brgy;
+}
 
 $pickField = function ($keys) use ($data) {
     foreach ($keys as $key) {
@@ -104,7 +127,7 @@ $sitioVal    = $pickField(['Sitio', 'sitio', 'SitioPresent', 'sitioPresent']);
                     <div class="col-md-12">
                         <div class="page-title-box">
                             
-                            <h4 class="page-title">UPDATE PROFILE</h4>
+                            <h4 class="page-title"><?= $readOnly ? 'VIEW PROFILE' : 'UPDATE PROFILE'; ?></h4>
                             
                             <div class="page-title-right">
                                 
@@ -131,115 +154,124 @@ $sitioVal    = $pickField(['Sitio', 'sitio', 'SitioPresent', 'sitioPresent']);
                         <div class="card card-simple">
                             <div class="card-body">
                                 <form class="parsley-examples" method="post" enctype="multipart/form-data">
-                                    <h5 class="section-title">Personal Data</h5>
+                                    <?php if ($readOnly): ?>
+                                        <div class="alert profile-readonly-note py-2 px-3 mb-3">
+                                            Viewing student details only. Editing is disabled for administrators.
+                                        </div>
+                                    <?php endif; ?>
+                                    <fieldset class="profile-fieldset" <?= $readOnly ? 'disabled' : ''; ?>>
+                                        <h5 class="section-title">Personal Data</h5>
 
-                                    <div class="form-grid">
-                                      <!-- Student No -->
-                                      <div class="form-group span-2">
-                                          <input type="hidden" value="<?= $data->StudentNumber; ?>" name="oldStudentNo" required>
-                                          <label class="label-req">Student No.</label>
-                                          <input type="text" class="form-control" value="<?= $data->StudentNumber; ?>" name="StudentNumber" readonly required>
-                                      </div>
+                                        <div class="form-grid">
+                                          <!-- Student No -->
+                                          <div class="form-group span-2">
+                                              <input type="hidden" value="<?= $data->StudentNumber; ?>" name="oldStudentNo" required>
+                                              <label class="label-req">Student No.</label>
+                                              <input type="text" class="form-control" value="<?= $data->StudentNumber; ?>" name="StudentNumber" readonly required>
+                                          </div>
 
-                                      <!-- Names -->
-                                      <div class="form-group">
-                                          <label class="label-req">First Name</label>
-                                          <input type="text" class="form-control" name="FirstName" value="<?= $data->FirstName; ?>" required>
-                                      </div>
-                                      <div class="form-group">
-                                          <label>Middle Name</label>
-                                          <input type="text" class="form-control" name="MiddleName" value="<?= $data->MiddleName; ?>">
-                                      </div>
-                                      <div class="form-group">
-                                          <label class="label-req">Last Name</label>
-                                          <input type="text" class="form-control" name="LastName" value="<?= $data->LastName; ?>" required>
-                                      </div>
-                                      <div class="form-group">
-                                          <label>Name Extn</label>
-                                          <input type="text" class="form-control" name="nameExtn" value="<?= !empty($data->nameExtn) ? $data->nameExtn : ''; ?>">
-                                      </div>
+                                          <!-- Names -->
+                                          <div class="form-group">
+                                              <label class="label-req">First Name</label>
+                                              <input type="text" class="form-control" name="FirstName" value="<?= $data->FirstName; ?>" required>
+                                          </div>
+                                          <div class="form-group">
+                                              <label>Middle Name</label>
+                                              <input type="text" class="form-control" name="MiddleName" value="<?= $data->MiddleName; ?>">
+                                          </div>
+                                          <div class="form-group">
+                                              <label class="label-req">Last Name</label>
+                                              <input type="text" class="form-control" name="LastName" value="<?= $data->LastName; ?>" required>
+                                          </div>
+                                          <div class="form-group">
+                                              <label>Name Extn</label>
+                                              <input type="text" class="form-control" name="nameExtn" value="<?= !empty($data->nameExtn) ? $data->nameExtn : ''; ?>">
+                                          </div>
 
-                                      <!-- Sex / Civil / Mobile -->
-                                      <div class="form-group">
-                                          <label class="label-req">Sex</label>
-                                          <select name="Sex" class="form-control" required>
-                                              <option value=""></option>
-                                              <option value="Female" <?= ($data->Sex == 'Female') ? 'selected' : ''; ?>>Female</option>
-                                              <option value="Male"   <?= ($data->Sex == 'Male') ? 'selected' : ''; ?>>Male</option>
-                                          </select>
-                                      </div>
-                                      <div class="form-group">
-                                          <label class="label-req">Civil Status</label>
-                                          <select name="CivilStatus" class="form-control" required>
-                                              <option value=""></option>
-                                              <option value="Single"  <?= ($data->CivilStatus == 'Single') ? 'selected' : ''; ?>>Single</option>
-                                              <option value="Married" <?= ($data->CivilStatus == 'Married') ? 'selected' : ''; ?>>Married</option>
-                                          </select>
-                                      </div>
-                                      <div class="form-group span-2">
-                                          <label>Mobile No.</label>
-<input type="text" class="form-control" name="contactNo" value="<?= isset($data->contactNo) ? $data->contactNo : ''; ?>">
-                                      </div>
+                                          <!-- Sex / Civil / Mobile -->
+                                          <div class="form-group">
+                                              <label class="label-req">Sex</label>
+                                              <select name="Sex" class="form-control" required>
+                                                  <option value=""></option>
+                                                  <option value="Female" <?= ($data->Sex == 'Female') ? 'selected' : ''; ?>>Female</option>
+                                                  <option value="Male"   <?= ($data->Sex == 'Male') ? 'selected' : ''; ?>>Male</option>
+                                              </select>
+                                          </div>
+                                          <div class="form-group">
+                                              <label class="label-req">Civil Status</label>
+                                              <select name="CivilStatus" class="form-control" required>
+                                                  <option value=""></option>
+                                                  <option value="Single"  <?= ($data->CivilStatus == 'Single') ? 'selected' : ''; ?>>Single</option>
+                                                  <option value="Married" <?= ($data->CivilStatus == 'Married') ? 'selected' : ''; ?>>Married</option>
+                                              </select>
+                                          </div>
+                                          <div class="form-group span-2">
+                                              <label>Mobile No.</label>
+    <input type="text" class="form-control" name="contactNo" value="<?= isset($data->contactNo) ? $data->contactNo : ''; ?>">
+                                          </div>
 
-                                 <!-- Birth Date / Age -->
-<div class="form-group">
-    <label class="label-req">Birth Date</label>
-    <input type="date" name="birthDate" id="bday" class="form-control"
-    onchange="calculateAge('bday','resultBday')" required value="<?= isset($data->birthDate) ? $data->birthDate : ''; ?>">
-</div>
-<div class="form-group">
-    <label class="label-req">Age</label>
-    <input type="text" name="Age" id="resultBday" class="form-control" readonly required value="<?= isset($data->Age) ? $data->Age : ''; ?>">
-</div>
+                                     <!-- Birth Date / Age -->
+    <div class="form-group">
+        <label class="label-req">Birth Date</label>
+        <input type="date" name="birthDate" id="bday" class="form-control"
+        onchange="calculateAge('bday','resultBday')" required value="<?= isset($data->birthDate) ? $data->birthDate : ''; ?>">
+    </div>
+    <div class="form-group">
+        <label class="label-req">Age</label>
+        <input type="text" name="Age" id="resultBday" class="form-control" readonly required value="<?= isset($data->Age) ? $data->Age : ''; ?>">
+    </div>
 
 
-                                      <!-- Address Fields -->
-                                      <div class="span-4"><h6 class="section-title">Address</h6></div>
-<div class="form-group">
-    <label class="label-req" for="province">Province</label>
-    <select id="province" name="Province" class="form-control" required>
-        <option value="">Select Province</option>
-        <?php foreach ($provinces as $province): ?>
-            <option value="<?= htmlspecialchars($province->Province, ENT_QUOTES, 'UTF-8'); ?>" <?= ($province->Province == $provinceVal) ? 'selected' : ''; ?>>
-                <?= htmlspecialchars($province->Province, ENT_QUOTES, 'UTF-8'); ?>
+                                          <!-- Address Fields -->
+                                          <div class="span-4"><h6 class="section-title">Address</h6></div>
+    <div class="form-group">
+        <label class="label-req" for="province">Province</label>
+        <select id="province" name="Province" class="form-control" required>
+            <option value="">Select Province</option>
+            <?php foreach ($provinces as $province): ?>
+                <option value="<?= htmlspecialchars($province->Province, ENT_QUOTES, 'UTF-8'); ?>" <?= ($province->Province == $provinceVal) ? 'selected' : ''; ?>>
+                    <?= htmlspecialchars($province->Province, ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="form-group">
+        <label class="label-req" for="city">City/Municipality</label>
+        <select id="city" name="City" class="form-control" required>
+            <option value="">Select City/Municipality</option>
+            <?php foreach ($cities as $city): ?>
+                <option value="<?= htmlspecialchars($city->City, ENT_QUOTES, 'UTF-8'); ?>" <?= ($city->City == $cityVal) ? 'selected' : ''; ?>>
+                    <?= htmlspecialchars($city->City, ENT_QUOTES, 'UTF-8'); ?>
+                </option>
+            <?php endforeach; ?>
+        </select>
+    </div>
+    <div class="form-group">
+        <label class="label-req" for="barangay">Barangay</label>
+        <select id="barangay" name="Brgy" class="form-control" required>
+            <option value="">Select Barangay</option>
+        <?php foreach ($barangays as $barangay): ?>
+            <option value="<?= htmlspecialchars($barangay->Brgy, ENT_QUOTES, 'UTF-8'); ?>" <?= ($barangay->Brgy == $brgyVal) ? 'selected' : ''; ?>>
+                <?= htmlspecialchars($barangay->Brgy, ENT_QUOTES, 'UTF-8'); ?>
             </option>
         <?php endforeach; ?>
-    </select>
-</div>
-<div class="form-group">
-    <label class="label-req" for="city">City/Municipality</label>
-    <select id="city" name="City" class="form-control" required>
-        <option value="">Select City/Municipality</option>
-        <?php foreach ($cities as $city): ?>
-            <option value="<?= htmlspecialchars($city->City, ENT_QUOTES, 'UTF-8'); ?>" <?= ($city->City == $cityVal) ? 'selected' : ''; ?>>
-                <?= htmlspecialchars($city->City, ENT_QUOTES, 'UTF-8'); ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-</div>
-<div class="form-group">
-    <label class="label-req" for="barangay">Barangay</label>
-    <select id="barangay" name="Brgy" class="form-control" required>
-        <option value="">Select Barangay</option>
-        <?php foreach ($barangays as $brgy): ?>
-            <option value="<?= htmlspecialchars($brgy->Brgy, ENT_QUOTES, 'UTF-8'); ?>" <?= ($brgy->Brgy == $brgyVal) ? 'selected' : ''; ?>>
-                <?= htmlspecialchars($brgy->Brgy, ENT_QUOTES, 'UTF-8'); ?>
-            </option>
-        <?php endforeach; ?>
-    </select>
-</div>
-<div class="form-group">
-    <label for="sitio">Sitio</label>
-    <input type="text" id="sitio" class="form-control" name="Sitio" placeholder="Sitio" value="<?= htmlspecialchars($sitioVal, ENT_QUOTES, 'UTF-8'); ?>">
-</div>
+        </select>
+    </div>
+    <div class="form-group">
+        <label for="sitio">Sitio</label>
+        <input type="text" id="sitio" class="form-control" name="Sitio" placeholder="Sitio" value="<?= htmlspecialchars($sitioVal, ENT_QUOTES, 'UTF-8'); ?>">
+    </div>
 
 
-                                    </div><!-- /.form-grid -->
+                                        </div><!-- /.form-grid -->
 
-                                    <input type="hidden" id="StudentNumber" name="StudentNumber" value="<?= $data->StudentNumber; ?>">
+                                        <input type="hidden" id="StudentNumber" name="StudentNumber" value="<?= $data->StudentNumber; ?>">
+                                    </fieldset>
+                                    <?php if (!$readOnly): ?>
                                     <div class="mt-2">
                                         <input type="submit" name="submit" class="btn btn-info" value="Update Profile">
                                     </div>
+                                    <?php endif; ?>
                                 </form>
                             </div><!-- /.card-body -->
                         </div><!-- /.card -->
@@ -265,6 +297,12 @@ $sitioVal    = $pickField(['Sitio', 'sitio', 'SitioPresent', 'sitioPresent']);
 <!-- Province → City → Barangay chaining -->
 <script>
 $(function () {
+    var isReadOnly = <?= $readOnly ? 'true' : 'false'; ?>;
+    if (isReadOnly) {
+        $('#province, #city, #barangay').prop('disabled', true);
+        return;
+    }
+
     $('#province, #city, #barangay').select2({ width: '100%' });
 
     function notifyError(message) {

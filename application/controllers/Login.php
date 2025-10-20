@@ -163,129 +163,174 @@ class Login extends CI_Controller
             $que = $this->db->query("insert into reservation values(0,'$appDate','$firstName','$middleName','$lastName','$nameExtn','$sex','$bDate','$age','$civilStatus','$empStatus','$ad_street','$ad_barangay','$ad_city','$ad_province','$email','$contactNos','$course','Pending')");
             $this->session->set_flashdata('msg', '<div class="alert alert-success text-center"><b>Reservation details have been processed successfully.  You will be notified via text or phone call for the status of your reservation.  Thank you.</b></div>');
             redirect('Login/reservation');
-
-
         }
     }
 
 
-function auth()
-{
-    $username     = $this->input->post('username', TRUE);
+    function auth()
+    {
+        $username     = $this->input->post('username', TRUE);
 
-    // 🔧 Do NOT XSS-filter the password (keeps characters intact)
-    $raw_password = $this->input->post('password');   // <-- removed TRUE
-    $password     = sha1($raw_password);              // <-- hash the raw input
+        // 🔧 Do NOT XSS-filter the password (keeps characters intact)
+        $raw_password = $this->input->post('password');   // <-- removed TRUE
+        $password     = sha1($raw_password);              // <-- hash the raw input
 
-    $sy       = $this->input->post('sy', TRUE);
-    $semester = $this->input->post('semester', TRUE);
+        $sy       = $this->input->post('sy', TRUE);
+        $semester = $this->input->post('semester', TRUE);
 
-    // NEW: capture next from POST first (form), then GET
-    $next = $this->input->post('next', TRUE) ?: $this->input->get('next', TRUE);
+        // NEW: capture next from POST first (form), then GET
+        $next = $this->input->post('next', TRUE) ?: $this->input->get('next', TRUE);
 
-    $validate = $this->Login_model->validate($username, $password);
+        $validate = $this->Login_model->validate($username, $password);
 
-    if ($validate->num_rows() > 0) {
-        $data     = $validate->row_array();
-        $username = $data['username'];
-        $fname    = $data['fName'];
-        $mname    = $data['mName'];
-        $lname    = $data['lName'];
-        $avatar   = $data['avatar'];
-        $email    = $data['email'];
-        $level    = $data['position'];
-        $IDNumber = $data['IDNumber'];
-        $position = $data['position'];
-        $acctStat = $data['acctStat'];
+        if ($validate->num_rows() > 0) {
+            $data     = $validate->row_array();
+            $username = $data['username'];
+            $fname    = $data['fName'];
+            $mname    = $data['mName'];
+            $lname    = $data['lName'];
+            $avatar   = $data['avatar'];
+            $email    = $data['email'];
+            $level    = $data['position'];
+            $IDNumber = $data['IDNumber'];
+            $position = $data['position'];
+            $acctStat = $data['acctStat'];
 
-        // 🔧 Be tolerant to case (active/Active/ACTIVE)
-        if (strtolower((string)$acctStat) === 'active') {
-            $this->Login_model->log_login_attempt($username, $raw_password, 'success');
+            // 🔧 Be tolerant to case (active/Active/ACTIVE)
+            if (strtolower((string)$acctStat) === 'active') {
+                $this->Login_model->log_login_attempt($username, $raw_password, 'success');
 
-            $user_data = array(
-                'username'  => $username,
-                'fname'     => $fname,
-                'mname'     => $mname,
-                'lname'     => $lname,
-                'avatar'    => $avatar,
-                'email'     => $email,
-                'level'     => $level,          // <-- Attendance::checkin reads this
-                'IDNumber'  => $IDNumber,
-                'position'  => $position,
-                'sy'        => $sy,
-                'semester'  => $semester,
-                'logged_in' => TRUE
-            );
-            $this->session->set_userdata($user_data);
+                $user_data = array(
+                    'username'  => $username,
+                    'fname'     => $fname,
+                    'mname'     => $mname,
+                    'lname'     => $lname,
+                    'avatar'    => $avatar,
+                    'email'     => $email,
+                    'level'     => $level,          // <-- Attendance::checkin reads this
+                    'IDNumber'  => $IDNumber,
+                    'position'  => $position,
+                    'sy'        => $sy,
+                    'semester'  => $semester,
+                    'logged_in' => TRUE
+                );
+                $this->session->set_userdata($user_data);
 
-    if ($next) {
-    $host  = parse_url($next, PHP_URL_HOST);
-    $path  = parse_url($next, PHP_URL_PATH) ?: '';
-    $query = parse_url($next, PHP_URL_QUERY);
-    $rel   = ltrim($path . ($query ? ('?' . $query) : ''), '/');
+                if ($next) {
+                    $host  = parse_url($next, PHP_URL_HOST);
+                    $path  = parse_url($next, PHP_URL_PATH) ?: '';
+                    $query = parse_url($next, PHP_URL_QUERY);
+                    $rel   = ltrim($path . ($query ? ('?' . $query) : ''), '/');
 
-    // Compute the *current* origin (proxy/CDN aware)
-    $xfProto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null;
-    $xfHost  = $_SERVER['HTTP_X_FORWARDED_HOST']  ?? null;
-    $scheme  = $xfProto ?: ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
-    $hostNow = $xfHost  ?: ($_SERVER['HTTP_HOST'] ?? parse_url(base_url(), PHP_URL_HOST));
-    $origin  = $scheme . '://' . $hostNow;
+                    // Compute the *current* origin (proxy/CDN aware)
+                    $xfProto = $_SERVER['HTTP_X_FORWARDED_PROTO'] ?? null;
+                    $xfHost  = $_SERVER['HTTP_X_FORWARDED_HOST']  ?? null;
+                    $scheme  = $xfProto ?: ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http');
+                    $hostNow = $xfHost  ?: ($_SERVER['HTTP_HOST'] ?? parse_url(base_url(), PHP_URL_HOST));
+                    $origin  = $scheme . '://' . $hostNow;
 
-    // Relative NEXT → make an absolute URL on the current origin
-    if (!$host && $rel) { redirect(rtrim($origin,'/').'/'.$rel); return; }
+                    // Relative NEXT → make an absolute URL on the current origin
+                    if (!$host && $rel) {
+                        redirect(rtrim($origin, '/') . '/' . $rel);
+                        return;
+                    }
 
-    // Absolute + same host → allow as-is
-    if ($host && strcasecmp($host, $hostNow) === 0) { redirect($next); return; }
+                    // Absolute + same host → allow as-is
+                    if ($host && strcasecmp($host, $hostNow) === 0) {
+                        redirect($next);
+                        return;
+                    }
 
-    // Absolute but different host → sanitize to current origin + relative path
-    if ($rel) { redirect(rtrim($origin,'/').'/'.$rel); return; }
-}
+                    // Absolute but different host → sanitize to current origin + relative path
+                    if ($rel) {
+                        redirect(rtrim($origin, '/') . '/' . $rel);
+                        return;
+                    }
+                }
 
 
 
-            // Fallback: your existing role-based redirects
-            switch ($level) {
-                case 'Admin':               redirect('page/admin'); break;
-                case 'School Admin':        redirect('page/school_admin'); break;
-                case 'Registrar':           redirect('page/registrar'); break;
-                case 'Head Registrar':      redirect('page/registrar'); break;
-                case 'Super Admin':         redirect('page/superAdmin'); break;
-                case 'Property Custodian':  redirect('page/p_custodian'); break;
-                case 'HR Admin':            redirect('page/hr'); break;
-                case 'Academic Officer':    redirect('page/a_officer'); break;
-                case 'Student':             redirect('page/student'); break;
-                case 'Stude Applicant':     redirect('page/student'); break;   // <— changed
-                case 'Accounting':          redirect('page/accounting'); break;
-                case 'Instructor':          redirect('page/Instructor'); break;
-                case 'Encoder':             redirect('page/encoder'); break;
-                case 'Human Resource':      redirect('page/hr'); break;
-                case 'Guidance':            redirect('page/guidance'); break;
-                case 'School Nurse':        redirect('page/medical'); break;
-                case 'IT':                  redirect('page/IT'); break;
-                case 'Librarian':           redirect('page/library'); break;
-                case 'Principal':           redirect('page/s_principal'); break;
-                default:
-                    $this->session->set_flashdata('danger', 'Unauthorized access.');
-                    redirect('login');
+                // Fallback: your existing role-based redirects
+                switch ($level) {
+                    case 'Admin':
+                        redirect('page/admin');
+                        break;
+                    case 'School Admin':
+                        redirect('page/school_admin');
+                        break;
+                    case 'Registrar':
+                        redirect('page/registrar');
+                        break;
+                    case 'Head Registrar':
+                        redirect('page/registrar');
+                        break;
+                    case 'Super Admin':
+                        redirect('page/superAdmin');
+                        break;
+                    case 'Property Custodian':
+                        redirect('page/p_custodian');
+                        break;
+                    case 'HR Admin':
+                        redirect('page/hr');
+                        break;
+                    case 'Academic Officer':
+                        redirect('page/a_officer');
+                        break;
+                    case 'Student':
+                        redirect('page/student');
+                        break;
+                    case 'Stude Applicant':
+                        redirect('page/student');
+                        break;   // <— changed
+                    case 'Accounting':
+                        redirect('page/accounting');
+                        break;
+                    case 'Instructor':
+                        redirect('page/Instructor');
+                        break;
+                    case 'Encoder':
+                        redirect('page/encoder');
+                        break;
+                    case 'Human Resource':
+                        redirect('page/hr');
+                        break;
+                    case 'Guidance':
+                        redirect('page/guidance');
+                        break;
+                    case 'School Nurse':
+                        redirect('page/medical');
+                        break;
+                    case 'IT':
+                        redirect('page/IT');
+                        break;
+                    case 'Librarian':
+                        redirect('page/library');
+                        break;
+                    case 'Principal':
+                        redirect('page/s_principal');
+                        break;
+                    default:
+                        $this->session->set_flashdata('danger', 'Unauthorized access.');
+                        redirect('login');
+                }
+                return;
+            } else {
+                // Inactive account
+                $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
+                $this->session->set_flashdata('danger', 'Your account is not active. Please contact support.');
+                // NEW: preserve next on failure
+                redirect('login' . ($next ? ('?next=' . urlencode($next)) : ''));
+                return;
             }
-            return;
         } else {
-            // Inactive account
+            // Invalid credentials
             $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
-            $this->session->set_flashdata('danger', 'Your account is not active. Please contact support.');
+            $this->session->set_flashdata('danger', 'The username or password is incorrect!');
             // NEW: preserve next on failure
             redirect('login' . ($next ? ('?next=' . urlencode($next)) : ''));
             return;
         }
-    } else {
-        // Invalid credentials
-        $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
-        $this->session->set_flashdata('danger', 'The username or password is incorrect!');
-        // NEW: preserve next on failure
-        redirect('login' . ($next ? ('?next=' . urlencode($next)) : ''));
-        return;
     }
-}
 
 
     public function deleteUser($user)
@@ -320,6 +365,4 @@ function auth()
             redirect(base_url() . 'login', 'refresh');
         }
     }
-
- 
 }

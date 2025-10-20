@@ -17,8 +17,8 @@ class Page extends CI_Controller
 		$this->load->library('user_agent');
 		$this->load->model('OnlineSettingsModel');
 		$this->load->vars(['online_settings' => $this->OnlineSettingsModel->get_setting()]);
-    $this->load->model('StudentModel'); 
-	        $this->load->model('CourseSectionModel');
+		$this->load->model('StudentModel');
+		$this->load->model('CourseSectionModel');
 
 		if ($this->session->userdata('logged_in') !== TRUE) {
 			redirect('login');
@@ -103,56 +103,56 @@ class Page extends CI_Controller
 		}
 	}
 
-public function admin()
-{
-    if ($this->session->userdata('level') === 'Admin') {
-        $sy  = (string)$this->session->userdata('sy');
-        $sem = (string)$this->session->userdata('semester');
+	public function admin()
+	{
+		if ($this->session->userdata('level') === 'Admin') {
+			$sy  = (string)$this->session->userdata('sy');
+			$sem = (string)$this->session->userdata('semester');
 
-        // define optional filters safely (null if absent)
-        $course = $this->input->get('course', true);
-        $major  = $this->input->get('major',  true);
-        $course = ($course === '' ? null : $course);
-        // keep $major as:
-        //   - null  -> ALL majors
-        //   - ''    -> only blank/NULL majors (if you ever want that)
-        //   - 'xyz' -> exact major filter
+			// define optional filters safely (null if absent)
+			$course = $this->input->get('course', true);
+			$major  = $this->input->get('major',  true);
+			$course = ($course === '' ? null : $course);
+			// keep $major as:
+			//   - null  -> ALL majors
+			//   - ''    -> only blank/NULL majors (if you ever want that)
+			//   - 'xyz' -> exact major filter
 
-        $this->load->model('AnnouncementModel');
-        $data['announcements'] = $this->AnnouncementModel->getAnnouncements();
+			$this->load->model('AnnouncementModel');
+			$data['announcements'] = $this->AnnouncementModel->getAnnouncements();
 
-        $this->load->model('Message_model');
-        $result['unreadMessages'] = $this->Message_model->getUnreadMessages($this->session->userdata('IDNumber'));
-        $result['users']          = $this->Message_model->get_all_users($this->session->userdata('IDNumber'));
+			$this->load->model('Message_model');
+			$result['unreadMessages'] = $this->Message_model->getUnreadMessages($this->session->userdata('IDNumber'));
+			$result['users']          = $this->Message_model->get_all_users($this->session->userdata('IDNumber'));
 
-        $result['data']  = $this->StudentModel->enrolledFirst($sy, $sem);
-        $result['data1'] = $this->StudentModel->enrolledSecond($sy, $sem);
-        $result['data2'] = $this->StudentModel->enrolledThird($sy, $sem);
-        $result['data3'] = $this->StudentModel->enrolledFourth($sy, $sem);
-        $result['data4'] = $this->StudentModel->forPaymentVerCount($sy, $sem);
-        $result['data5'] = $this->StudentModel->teachersCount();
-        $result['data6'] = $this->StudentModel->forValidationCounts($sem, $sy);
-        $result['data7'] = $this->StudentModel->totalSignups();
+			$result['data']  = $this->StudentModel->enrolledFirst($sy, $sem);
+			$result['data1'] = $this->StudentModel->enrolledSecond($sy, $sem);
+			$result['data2'] = $this->StudentModel->enrolledThird($sy, $sem);
+			$result['data3'] = $this->StudentModel->enrolledFourth($sy, $sem);
+			$result['data4'] = $this->StudentModel->forPaymentVerCount($sy, $sem);
+			$result['data5'] = $this->StudentModel->teachersCount();
+			$result['data6'] = $this->StudentModel->forValidationCounts($sem, $sy);
+			$result['data7'] = $this->StudentModel->totalSignups();
 
-        // summaries
-        $result['data8']           = $this->StudentModel->CourseCount($sem, $sy);        // By Course
-        $result['majorCounts']     = $this->StudentModel->MajorCount($sem, $sy);         // By Major
-        $result['yearLevelCounts'] = $this->StudentModel->YearLevelCount($sem, $sy);     // By Year Level
-        // FIXED: correct method name + correct argument order
-        $result['sectionCounts']   = $this->StudentModel->SectionCounts($sy, $sem, $course, $major); // By Section
+			// summaries
+			$result['data8']           = $this->StudentModel->CourseCount($sem, $sy);        // By Course
+			$result['majorCounts']     = $this->StudentModel->MajorCount($sem, $sy);         // By Major
+			$result['yearLevelCounts'] = $this->StudentModel->YearLevelCount($sem, $sy);     // By Year Level
+			// FIXED: correct method name + correct argument order
+			$result['sectionCounts']   = $this->StudentModel->SectionCounts($sy, $sem, $course, $major); // By Section
 
-        $result['data9']  = $this->StudentModel->SexCount($sem, $sy);
-        $result['data10'] = $this->StudentModel->dailyEnrollStat();
-        $result['data18'] = $this->SettingsModel->getSchoolInfo();
-        $result['data19'] = $this->StudentModel->studeRequestList();
-        $result['data21'] = $this->StudentModel->newestSignup();
+			$result['data9']  = $this->StudentModel->SexCount($sem, $sy);
+			$result['data10'] = $this->StudentModel->dailyEnrollStat();
+			$result['data18'] = $this->SettingsModel->getSchoolInfo();
+			$result['data19'] = $this->StudentModel->studeRequestList();
+			$result['data21'] = $this->StudentModel->newestSignup();
 
-        $result = array_merge($result, $data);
-        $this->load->view('dashboard_admin', $result);
-    } else {
-        echo "Access Denied";
-    }
-}
+			$result = array_merge($result, $data);
+			$this->load->view('dashboard_admin', $result);
+		} else {
+			echo "Access Denied";
+		}
+	}
 
 
 
@@ -958,36 +958,36 @@ public function admin()
 			echo "Access Denied";
 		}
 	}
-function student()
-{
-    // allow Student AND Stude Applicant to access the dashboard
-    $level = (string) $this->session->userdata('level');
-    if (!in_array($level, ['Student', 'Stude Applicant'], true)) {
-        redirect('Login'); // or show_error('Forbidden', 403);
-        return;
-    }
+	function student()
+	{
+		// allow Student AND Stude Applicant to access the dashboard
+		$level = (string) $this->session->userdata('level');
+		if (!in_array($level, ['Student', 'Stude Applicant'], true)) {
+			redirect('Login'); // or show_error('Forbidden', 403);
+			return;
+		}
 
-    $id  = (string) $this->session->userdata('username');   // StudentNumber/ID
-    $sem = (string) $this->session->userdata('semester');
-    $sy  = (string) $this->session->userdata('sy');
+		$id  = (string) $this->session->userdata('username');   // StudentNumber/ID
+		$sem = (string) $this->session->userdata('semester');
+		$sy  = (string) $this->session->userdata('sy');
 
-    // messages
-    $this->load->model('Message_model');
-    $result['unreadMessages'] = $this->Message_model->getUnreadMessages($this->session->userdata('IDNumber'));
-    $result['users']          = $this->Message_model->get_all_users($this->session->userdata('IDNumber'));
+		// messages
+		$this->load->model('Message_model');
+		$result['unreadMessages'] = $this->Message_model->getUnreadMessages($this->session->userdata('IDNumber'));
+		$result['users']          = $this->Message_model->get_all_users($this->session->userdata('IDNumber'));
 
-    // announcements + student stats
-    $this->load->model('AnnouncementModel');
-    $result['data']  = $this->AnnouncementModel->getActiveAnnouncementsFor('Students');
-    $result['data1'] = $this->StudentModel->studeEnrollStat($id, $sem, $sy);
-    $result['data2'] = $this->StudentModel->studeBalance($id);
-    $result['data3'] = $this->StudentModel->semStudeCount($id);
-    $result['data4'] = $this->StudentModel->studeTotalSubjects($id, $sem, $sy);
-    $result['is_flagged']   = $this->StudentModel->isFlagged($id);
-    $result['flag_details'] = $this->StudentModel->getFlagDetails($id);
+		// announcements + student stats
+		$this->load->model('AnnouncementModel');
+		$result['data']  = $this->AnnouncementModel->getActiveAnnouncementsFor('Students');
+		$result['data1'] = $this->StudentModel->studeEnrollStat($id, $sem, $sy);
+		$result['data2'] = $this->StudentModel->studeBalance($id);
+		$result['data3'] = $this->StudentModel->semStudeCount($id);
+		$result['data4'] = $this->StudentModel->studeTotalSubjects($id, $sem, $sy);
+		$result['is_flagged']   = $this->StudentModel->isFlagged($id);
+		$result['flag_details'] = $this->StudentModel->getFlagDetails($id);
 
-    $this->load->view('dashboard_student', $result);
-}
+		$this->load->view('dashboard_student', $result);
+	}
 
 
 
@@ -1381,7 +1381,7 @@ function student()
 		$id = ($level === 'Student')
 			? (string)$this->session->userdata('username')
 			: (string)$this->input->get('id');
-    $this->ensure_student_profile_exists($id);
+		$this->ensure_student_profile_exists($id);
 
 		// Pull data from model
 		$raw0 = $this->StudentModel->displayrecordsById($id);       // main profile row (array of objects)
@@ -1671,8 +1671,7 @@ function student()
 			$id = $this->session->userdata('username');
 		} else {
 			$id = $this->input->get('id');
-			    $this->ensure_student_profile_exists($id);
-
+			$this->ensure_student_profile_exists($id);
 		}
 
 		$studeno = $id;
@@ -1885,112 +1884,112 @@ function student()
 	}
 
 
-/** Ensure a studeprofile row exists for a given StudentNumber (id). */
-private function ensure_student_profile_exists($id)
-{
-    $this->load->database();
+	/** Ensure a studeprofile row exists for a given StudentNumber (id). */
+	private function ensure_student_profile_exists($id)
+	{
+		$this->load->database();
 
-    // already exists? nothing to do
-    $exists = $this->db->select('StudentNumber')
-                       ->get_where('studeprofile', ['StudentNumber' => $id], 1)
-                       ->row();
-    if ($exists) {
-        return;
-    }
+		// already exists? nothing to do
+		$exists = $this->db->select('StudentNumber')
+			->get_where('studeprofile', ['StudentNumber' => $id], 1)
+			->row();
+		if ($exists) {
+			return;
+		}
 
-    $settingsRow = $this->db->select('settingsID')->limit(1)->get('o_srms_settings')->row();
-    $settingsID  = $settingsRow->settingsID ?? 1;
+		$settingsRow = $this->db->select('settingsID')->limit(1)->get('o_srms_settings')->row();
+		$settingsID  = $settingsRow->settingsID ?? 1;
 
-    // try source 1: studentsignup
-    $src = $this->db->get_where('studentsignup', ['StudentNumber' => $id], 1)->row();
-    if (!$src) {
-        // try source 2: o_users
-        $src = $this->db->get_where('o_users', ['username' => $id], 1)->row();
-        if ($src) {
-            $payload = [
-                'StudentNumber' => $src->IDNumber ?: $src->username,
-                'FirstName'     => $src->fName ?? '',
-                'MiddleName'    => $src->mName ?? '',
-                'LastName'      => $src->lName ?? '',
-                'email'         => $src->email ?? '',
-                'ethnicity'     => '',
-                'working'       => 'No',
-                'VaccStat'      => '',
-                'nationality'   => 'Filipino',
-                'course'        => '',
-                'Major'         => '',
-                'yearLevel'     => '',
-                'settingsID'    => $settingsID
-            ];
-            $this->db->insert('studeprofile', $payload);
-        }
-        return;
-    }
+		// try source 1: studentsignup
+		$src = $this->db->get_where('studentsignup', ['StudentNumber' => $id], 1)->row();
+		if (!$src) {
+			// try source 2: o_users
+			$src = $this->db->get_where('o_users', ['username' => $id], 1)->row();
+			if ($src) {
+				$payload = [
+					'StudentNumber' => $src->IDNumber ?: $src->username,
+					'FirstName'     => $src->fName ?? '',
+					'MiddleName'    => $src->mName ?? '',
+					'LastName'      => $src->lName ?? '',
+					'email'         => $src->email ?? '',
+					'ethnicity'     => '',
+					'working'       => 'No',
+					'VaccStat'      => '',
+					'nationality'   => 'Filipino',
+					'course'        => '',
+					'Major'         => '',
+					'yearLevel'     => '',
+					'settingsID'    => $settingsID
+				];
+				$this->db->insert('studeprofile', $payload);
+			}
+			return;
+		}
 
-    $payload = [
-        'StudentNumber'       => $src->StudentNumber,
-        'FirstName'           => $src->FirstName ?? '',
-        'MiddleName'          => $src->MiddleName ?? '',
-        'LastName'            => $src->LastName ?? '',
-        'nameExtn'            => $src->nameExtn ?? '',
-        'Sex'                 => $src->Sex ?? '',
-        'birthDate'           => $src->birthDate ?? '',
-        'age'                 => $src->age ?? '',
-        'BirthPlace'          => $src->BirthPlace ?? '',
-        'contactNo'           => $src->contactNo ?? '',
-        'email'               => $src->email ?? '',
-        'CivilStatus'         => $src->CivilStatus ?? '',
-        'ethnicity'           => $src->ethnicity ?? '',
-        'Religion'            => $src->Religion ?? '',
-        'working'             => $src->working ?? 'No',
-        'VaccStat'            => $src->VaccStat ?? '',
-        'province'            => $src->province ?? '',
-        'city'                => $src->city ?? '',
-        'brgy'                => $src->brgy ?? '',
-        'sitio'               => $src->sitio ?? '',
-        'course'              => $src->Course1 ?? '',
-        'Major'               => $src->Major1 ?? '',
-        'occupation'          => $src->occupation ?? '',
-        'salary'              => $src->salary ?? '',
-        'employer'            => $src->employer ?? '',
-        'employerAddress'     => $src->employerAddress ?? '',
-        'graduationDate'      => $src->graduationDate ?? '',
-        'guardian'            => $src->guardian ?? '',
-        'guardianRelationship'=> $src->guardianRelationship ?? '',
-        'guardianContact'     => $src->guardianContact ?? '',
-        'guardianAddress'     => $src->guardianAddress ?? '',
-        'spouse'              => $src->spouse ?? '',
-        'spouseRelationship'  => $src->spouseRelationship ?? '',
-        'spouseContact'       => $src->spouseContact ?? '',
-        'children'            => $src->children ?? '',
-        'imagePath'           => $src->imagePath ?? '',
-        'yearLevel'           => $src->yearLevel ?? '',
-        'father'              => $src->father ?? '',
-        'fOccupation'         => $src->fOccupation ?? '',
-        'fatherAddress'       => $src->fatherAddress ?? '',
-        'fatherContact'       => $src->fatherContact ?? '',
-        'mother'              => $src->mother ?? '',
-        'mOccupation'         => $src->mOccupation ?? '',
-        'motherAddress'       => $src->motherAddress ?? '',
-        'motherContact'       => $src->motherContact ?? '',
-        'disability'          => $src->disability ?? '',
-        'parentsMonthly'      => $src->parentsMonthly ?? '0',
-        'elementary'          => $src->elementary ?? '',
-        'elementaryAddress'   => $src->elementaryAddress ?? '',
-        'elemGraduated'       => $src->elemGraduated ?? '',
-        'secondary'           => $src->secondary ?? '',
-        'secondaryAddress'    => $src->secondaryAddress ?? '',
-        'secondaryGraduated'  => $src->secondaryGraduated ?? '',
-        'vocational'          => $src->vocational ?? '',
-        'vocationalAddress'   => $src->vocationalAddress ?? '',
-        'vocationalGraduated' => $src->vocationalGraduated ?? '',
-        'vocationalCourse'    => $src->vocationalCourse ?? '',
-        'nationality'         => $src->nationality ?? 'Filipino',
-        'settingsID'          => $settingsID
-    ];
+		$payload = [
+			'StudentNumber'       => $src->StudentNumber,
+			'FirstName'           => $src->FirstName ?? '',
+			'MiddleName'          => $src->MiddleName ?? '',
+			'LastName'            => $src->LastName ?? '',
+			'nameExtn'            => $src->nameExtn ?? '',
+			'Sex'                 => $src->Sex ?? '',
+			'birthDate'           => $src->birthDate ?? '',
+			'age'                 => $src->age ?? '',
+			'BirthPlace'          => $src->BirthPlace ?? '',
+			'contactNo'           => $src->contactNo ?? '',
+			'email'               => $src->email ?? '',
+			'CivilStatus'         => $src->CivilStatus ?? '',
+			'ethnicity'           => $src->ethnicity ?? '',
+			'Religion'            => $src->Religion ?? '',
+			'working'             => $src->working ?? 'No',
+			'VaccStat'            => $src->VaccStat ?? '',
+			'province'            => $src->province ?? '',
+			'city'                => $src->city ?? '',
+			'brgy'                => $src->brgy ?? '',
+			'sitio'               => $src->sitio ?? '',
+			'course'              => $src->Course1 ?? '',
+			'Major'               => $src->Major1 ?? '',
+			'occupation'          => $src->occupation ?? '',
+			'salary'              => $src->salary ?? '',
+			'employer'            => $src->employer ?? '',
+			'employerAddress'     => $src->employerAddress ?? '',
+			'graduationDate'      => $src->graduationDate ?? '',
+			'guardian'            => $src->guardian ?? '',
+			'guardianRelationship' => $src->guardianRelationship ?? '',
+			'guardianContact'     => $src->guardianContact ?? '',
+			'guardianAddress'     => $src->guardianAddress ?? '',
+			'spouse'              => $src->spouse ?? '',
+			'spouseRelationship'  => $src->spouseRelationship ?? '',
+			'spouseContact'       => $src->spouseContact ?? '',
+			'children'            => $src->children ?? '',
+			'imagePath'           => $src->imagePath ?? '',
+			'yearLevel'           => $src->yearLevel ?? '',
+			'father'              => $src->father ?? '',
+			'fOccupation'         => $src->fOccupation ?? '',
+			'fatherAddress'       => $src->fatherAddress ?? '',
+			'fatherContact'       => $src->fatherContact ?? '',
+			'mother'              => $src->mother ?? '',
+			'mOccupation'         => $src->mOccupation ?? '',
+			'motherAddress'       => $src->motherAddress ?? '',
+			'motherContact'       => $src->motherContact ?? '',
+			'disability'          => $src->disability ?? '',
+			'parentsMonthly'      => $src->parentsMonthly ?? '0',
+			'elementary'          => $src->elementary ?? '',
+			'elementaryAddress'   => $src->elementaryAddress ?? '',
+			'elemGraduated'       => $src->elemGraduated ?? '',
+			'secondary'           => $src->secondary ?? '',
+			'secondaryAddress'    => $src->secondaryAddress ?? '',
+			'secondaryGraduated'  => $src->secondaryGraduated ?? '',
+			'vocational'          => $src->vocational ?? '',
+			'vocationalAddress'   => $src->vocationalAddress ?? '',
+			'vocationalGraduated' => $src->vocationalGraduated ?? '',
+			'vocationalCourse'    => $src->vocationalCourse ?? '',
+			'nationality'         => $src->nationality ?? 'Filipino',
+			'settingsID'          => $settingsID
+		];
 
-    $this->db->insert('studeprofile', $payload);
-}
+		$this->db->insert('studeprofile', $payload);
+	}
 
 
 
@@ -2625,43 +2624,43 @@ private function ensure_student_profile_exists($id)
 		$this->load->view('inventory_list_accountable', $result);
 	}
 
-// Profile List
-public function profileList()
-{
-    // ✅ Use studentsignup instead of studeprofile
-    $result['data'] = $this->StudentModel->getsignProfile();  // <— swap this line
-    // (Optional) if your view's transfer modal needs a list:
-    $result['prof'] = $result['data'];
+	// Profile List
+	public function profileList()
+	{
+		// ✅ Use studentsignup instead of studeprofile
+		$result['data'] = $this->StudentModel->getsignProfile();  // <— swap this line
+		// (Optional) if your view's transfer modal needs a list:
+		$result['prof'] = $result['data'];
 
-    if ($this->input->post('submit')) {
-        $StudentNumber  = $this->input->post('dataid', true);
-        $Company        = $this->input->post('Company', true);
-        $CompAddress    = $this->input->post('CompAddress', true);
-        $Position       = $this->input->post('Position', true);
-        $dateEmployed   = $this->input->post('dateEmployed', true);
-        $classification = $this->input->post('classification', true);
-        $income         = $this->input->post('income', true);
+		if ($this->input->post('submit')) {
+			$StudentNumber  = $this->input->post('dataid', true);
+			$Company        = $this->input->post('Company', true);
+			$CompAddress    = $this->input->post('CompAddress', true);
+			$Position       = $this->input->post('Position', true);
+			$dateEmployed   = $this->input->post('dateEmployed', true);
+			$classification = $this->input->post('classification', true);
+			$income         = $this->input->post('income', true);
 
-        $this->db->insert('employment', [
-            'StudentNumber'  => $StudentNumber,
-            'Company'        => $Company,
-            'CompAddress'    => $CompAddress,
-            'Position'       => $Position,
-            'dateEmployed'   => $dateEmployed,
-            'classification' => $classification,
-            'income'         => $income
-        ]);
+			$this->db->insert('employment', [
+				'StudentNumber'  => $StudentNumber,
+				'Company'        => $Company,
+				'CompAddress'    => $CompAddress,
+				'Position'       => $Position,
+				'dateEmployed'   => $dateEmployed,
+				'classification' => $classification,
+				'income'         => $income
+			]);
 
-        // ⚠️ This updates studeprofile; keep it only if that row exists.
-        // Otherwise, wrap it in a conditional or remove it if you're fully moving to signups.
-        $this->db->where('StudentNumber', $StudentNumber)
-                 ->update('studeprofile', ['empStat' => 'Employed']);
+			// ⚠️ This updates studeprofile; keep it only if that row exists.
+			// Otherwise, wrap it in a conditional or remove it if you're fully moving to signups.
+			$this->db->where('StudentNumber', $StudentNumber)
+				->update('studeprofile', ['empStat' => 'Employed']);
 
-        redirect('Page/profileList');
-    } else {
-        $this->load->view('profile_list', $result);
-    }
-}
+			redirect('Page/profileList');
+		} else {
+			$this->load->view('profile_list', $result);
+		}
+	}
 
 
 
@@ -2677,79 +2676,84 @@ public function profileList()
 		$this->load->view('student_signup_update', $result);
 	}
 
-public function deleteSignup()
-{
-    // Require login
-    if (!$this->session->userdata('username')) {
-        $this->session->set_flashdata('message', 'Please log in.');
-        redirect('Login'); return;
-    }
+	public function deleteSignup()
+	{
+		// Require login
+		if (!$this->session->userdata('username')) {
+			$this->session->set_flashdata('message', 'Please log in.');
+			redirect('Login');
+			return;
+		}
 
-    // Role check (case-insensitive; supports multiple session keys)
-    $role = strtolower(trim((string)(
-        $this->session->userdata('level')
-        ?? $this->session->userdata('position')
-        ?? $this->session->userdata('role')
-        ?? ''
-    )));
-    $allowed = ['head registrar','registrar','assistant registrar','admin','administrator'];
-    if (!in_array($role, $allowed, true)) {
-        $this->session->set_flashdata('danger', 'Unauthorized: Registrar/Admin role required.');
-        redirect($this->input->server('HTTP_REFERER') ?: 'Page/profileList'); return;
-    }
+		// Role check (case-insensitive; supports multiple session keys)
+		$role = strtolower(trim((string)(
+			$this->session->userdata('level')
+			?? $this->session->userdata('position')
+			?? $this->session->userdata('role')
+			?? ''
+		)));
+		$allowed = ['head registrar', 'registrar', 'assistant registrar', 'admin', 'administrator'];
+		if (!in_array($role, $allowed, true)) {
+			$this->session->set_flashdata('danger', 'Unauthorized: Registrar/Admin role required.');
+			redirect($this->input->server('HTTP_REFERER') ?: 'Page/profileList');
+			return;
+		}
 
-    // Inputs (POST)
-    $studno = $this->input->post('id', true);      // StudentNumber
-    $email  = $this->input->post('email', true);   // optional (legacy)
-    $return_level = $this->input->post('return_level', true);
+		// Inputs (POST)
+		$studno = $this->input->post('id', true);      // StudentNumber
+		$email  = $this->input->post('email', true);   // optional (legacy)
+		$return_level = $this->input->post('return_level', true);
 
-    if (!$studno) {
-        $this->session->set_flashdata('danger', 'No StudentNumber provided.');
-        redirect($this->input->server('HTTP_REFERER') ?: 'Page/profileList'); return;
-    }
+		if (!$studno) {
+			$this->session->set_flashdata('danger', 'No StudentNumber provided.');
+			redirect($this->input->server('HTTP_REFERER') ?: 'Page/profileList');
+			return;
+		}
 
-    // Start atomic delete across all related tables
-    $this->db->trans_start();
+		// Start atomic delete across all related tables
+		$this->db->trans_start();
 
-    // (1) Delete semester enrollments
-    // NOTE: This removes ALL rows for the student in semesterstude.
-    // If you only want the current SY/semester, add ->where('SY', $currentSY)->where('Semester', $currentSem)
-    $this->db->delete('semesterstude', ['StudentNumber' => $studno]);
+		// (1) Delete semester enrollments
+		// NOTE: This removes ALL rows for the student in semesterstude.
+		// If you only want the current SY/semester, add ->where('SY', $currentSY)->where('Semester', $currentSem)
+		$this->db->delete('semesterstude', ['StudentNumber' => $studno]);
 
-    // (2) Delete the signup/registration
-    $this->db->delete('studentsignup', ['StudentNumber' => $studno]);
-    // (2b) Remove any saved profile card for the student
-    $this->db->delete('studeprofile', ['StudentNumber' => $studno]);
-    // Primary rule: username == StudentNumber; limit to student-ish roles to avoid staff deletions
-    $this->db->where('username', $studno)
-             ->group_start()
-               ->where('position', 'Student')
-               ->or_where('position', 'Stude Applicant')
-             ->group_end()
-             ->delete('o_users');
+		// (2) Delete the signup/registration
+		$this->db->delete('studentsignup', ['StudentNumber' => $studno]);
+		// (2b) Remove any saved profile card for the student
+		$this->db->delete('studeprofile', ['StudentNumber' => $studno]);
+		// Primary rule: username == StudentNumber; limit to student-ish roles to avoid staff deletions
+		$this->db->where('username', $studno)
+			->group_start()
+			->where('position', 'Student')
+			->or_where('position', 'Stude Applicant')
+			->group_end()
+			->delete('o_users');
 
-    // Optional: legacy cleanup by email (if your older system used email usernames)
-    if (!empty($email)) {
-        $this->db->delete('o_users', ['email' => $email]);
-    }
+		// Optional: legacy cleanup by email (if your older system used email usernames)
+		if (!empty($email)) {
+			$this->db->delete('o_users', ['email' => $email]);
+		}
 
-    $this->db->trans_complete();
+		$this->db->trans_complete();
 
-    if (!$this->db->trans_status()) {
-        $this->session->set_flashdata('danger', 'Delete failed. Please try again or check logs.');
-    } else {
-        $this->session->set_flashdata('success',
-            'Deleted registration, profile, semester records, and user account for '.$studno.'.');
-    }
+		if (!$this->db->trans_status()) {
+			$this->session->set_flashdata('danger', 'Delete failed. Please try again or check logs.');
+		} else {
+			$this->session->set_flashdata(
+				'success',
+				'Deleted registration, profile, semester records, and user account for ' . $studno . '.'
+			);
+		}
 
-    // Redirect back
-    if ($return_level) {
-        redirect('Masterlist/byGradeYL?yearlevel='.rawurlencode($return_level));
-    } else {
-        $ref = $this->input->server('HTTP_REFERER');
-        redirect($ref ? $ref : 'Page/profileList');
-    }
-}
+		// Redirect back
+		if ($return_level) {
+			redirect('Masterlist/byGradeYL?yearlevel=' . rawurlencode($return_level));
+		} else {
+			$ref = $this->input->server('HTTP_REFERER');
+			redirect($ref ? $ref : 'Page/profileList');
+		}
+	}
 
 	//Profile List for Enrollment
 	function profileForEnrollment()
@@ -3564,60 +3568,67 @@ public function deleteSignup()
 		}
 	}
 
-// Page.php (controller)
+	// Page.php (controller)
 
-public function changeDP()
-{
-    $this->load->view('upload_profile_pic');
-}
+	public function changeDP()
+	{
+		$this->load->view('upload_profile_pic');
+	}
 
-public function uploadProfPic()
-{
-    $username = (string) $this->session->userdata('username');
-    if ($username === '') { redirect('login'); return; }
+	public function uploadProfPic()
+	{
+		$username = (string) $this->session->userdata('username');
+		if ($username === '') {
+			redirect('login');
+			return;
+		}
 
-    $config = [
-        'upload_path'      => FCPATH . 'upload/profile/',
-        'allowed_types'    => 'jpg|jpeg|png|gif',
-        'max_size'         => 2048,
-        'file_ext_tolower' => TRUE,
-        'encrypt_name'     => TRUE,
-        'remove_spaces'    => TRUE,
-    ];
-    $this->load->library('upload', $config);
+		$config = [
+			'upload_path'      => FCPATH . 'upload/profile/',
+			'allowed_types'    => 'jpg|jpeg|png|gif',
+			'max_size'         => 2048,
+			'file_ext_tolower' => TRUE,
+			'encrypt_name'     => TRUE,
+			'remove_spaces'    => TRUE,
+		];
+		$this->load->library('upload', $config);
 
-    if (!$this->upload->do_upload('nonoy')) {
-        $this->session->set_flashdata('msg',
-            '<div class="alert alert-danger text-center">'.$this->upload->display_errors('', '').'</div>');
-        redirect('Page/changeDP');
-        return;
-    }
+		if (!$this->upload->do_upload('nonoy')) {
+			$this->session->set_flashdata(
+				'msg',
+				'<div class="alert alert-danger text-center">' . $this->upload->display_errors('', '') . '</div>'
+			);
+			redirect('Page/changeDP');
+			return;
+		}
 
-    $filename = $this->upload->data('file_name');
+		$filename = $this->upload->data('file_name');
 
-    // get current avatar (from users first; if not there try o_users)
-    $row = $this->db->select('avatar')->from('users')->where('username',$username)->get()->row();
-    if (!$row) {
-        $row = $this->db->select('avatar')->from('o_users')->where('username',$username)->get()->row();
-    }
-    if ($row && $row->avatar && strtolower($row->avatar) !== 'avatar.png') {
-        $old = FCPATH . 'upload/profile/' . $row->avatar;
-        if (is_file($old)) @unlink($old);
-    }
+		// get current avatar (from users first; if not there try o_users)
+		$row = $this->db->select('avatar')->from('users')->where('username', $username)->get()->row();
+		if (!$row) {
+			$row = $this->db->select('avatar')->from('o_users')->where('username', $username)->get()->row();
+		}
+		if ($row && $row->avatar && strtolower($row->avatar) !== 'avatar.png') {
+			$old = FCPATH . 'upload/profile/' . $row->avatar;
+			if (is_file($old)) @unlink($old);
+		}
 
-    // update whichever table the user exists in
-    $this->db->where('username',$username)->update('users', ['avatar'=>$filename]);
-    if ($this->db->affected_rows() === 0) {
-        $this->db->where('username',$username)->update('o_users', ['avatar'=>$filename]);
-    }
+		// update whichever table the user exists in
+		$this->db->where('username', $username)->update('users', ['avatar' => $filename]);
+		if ($this->db->affected_rows() === 0) {
+			$this->db->where('username', $username)->update('o_users', ['avatar' => $filename]);
+		}
 
-    // refresh session so UI shows the new image immediately
-    $this->session->set_userdata('avatar', $filename);
+		// refresh session so UI shows the new image immediately
+		$this->session->set_userdata('avatar', $filename);
 
-    $this->session->set_flashdata('msg',
-        '<div class="alert alert-success text-center"><b>Uploaded successfully.</b></div>');
-    redirect('Page/changeDP');
-}
+		$this->session->set_flashdata(
+			'msg',
+			'<div class="alert alert-success text-center"><b>Uploaded successfully.</b></div>'
+		);
+		redirect('Page/changeDP');
+	}
 
 
 
@@ -4492,7 +4503,7 @@ public function uploadProfPic()
         <h2 style="color: #2b6cb0;">Password Reset Notification</h2>
         <p>Dear <strong>' . htmlspecialchars($user->fName) . '</strong>,</p>
 
-        <p>Your password has been successfully reset in the School Records Management System (SRMS).</p>
+        <p>Your password has been successfully reset.</p>
 
         <p><strong>Here are your new login credentials:</strong></p>
         <table style="width: 100%; max-width: 400px; border-collapse: collapse; margin-bottom: 20px;">
@@ -4513,9 +4524,9 @@ public function uploadProfPic()
             </a>
         </p>
 
-        <p style="margin-top: 30px;">Best regards,<br><strong>' . htmlspecialchars($schoolName) . ' SRMS Team</strong></p>
+        <p style="margin-top: 30px;">Best regards,<br><strong>' . htmlspecialchars($schoolName) . ' FBMSO Team</strong></p>
         <hr style="margin-top: 40px;">
-        <p style="font-size: 12px; color: #999;">This is an automated message from the School Records Management System. Please do not reply.</p>
+        <p style="font-size: 12px; color: #999;">This is an automated message from Faculty of Business and Management Student Organization. Please do not reply.</p>
     </div>
 </div>';
 
@@ -6172,115 +6183,115 @@ public function uploadProfPic()
 
 
 	public function enrolledStudentsPage()
-{
-    // --- Session basics
-    $sy   = (string) $this->session->userdata('sy');
-    $sem  = (string) $this->session->userdata('semester');
-    $phID = (string) $this->session->userdata('username');
+	{
+		// --- Session basics
+		$sy   = (string) $this->session->userdata('sy');
+		$sem  = (string) $this->session->userdata('semester');
+		$phID = (string) $this->session->userdata('username');
 
-    // ---- SAFE DEFAULTS
-    $courseVal      = null;
-    $majorVal       = null;
-    $students       = [];
-    $studentsByYear = [];
-    $sectionsByYear = [];
-    $flagCounts     = [];   // << NEW: total/unsettled per student
+		// ---- SAFE DEFAULTS
+		$courseVal      = null;
+		$majorVal       = null;
+		$students       = [];
+		$studentsByYear = [];
+		$sectionsByYear = [];
+		$flagCounts     = [];   // << NEW: total/unsettled per student
 
-    // --- Resolve PH program
-    $prog = $this->db->where('IDNumber', $phID)->get('course_table')->row();
-    if (!$prog) {
-        $data = [
-            'courseDescription' => $courseVal,
-            'major'             => $majorVal,
-            'students'          => $students,
-            'studentsByYear'    => $studentsByYear,
-            'sectionsByYear'    => $sectionsByYear,
-            'studentCount'      => 0,
-            'sy'                => $sy,
-            'sem'               => $sem,
-            'flagCounts'        => $flagCounts, // << NEW
-        ];
-        return $this->load->view('enrolled_students_view1', $data);
-    }
+		// --- Resolve PH program
+		$prog = $this->db->where('IDNumber', $phID)->get('course_table')->row();
+		if (!$prog) {
+			$data = [
+				'courseDescription' => $courseVal,
+				'major'             => $majorVal,
+				'students'          => $students,
+				'studentsByYear'    => $studentsByYear,
+				'sectionsByYear'    => $sectionsByYear,
+				'studentCount'      => 0,
+				'sy'                => $sy,
+				'sem'               => $sem,
+				'flagCounts'        => $flagCounts, // << NEW
+			];
+			return $this->load->view('enrolled_students_view1', $data);
+		}
 
-    $courseVal = (string) $prog->CourseDescription;
-    $majorVal  = isset($prog->Major) ? (string) $prog->Major : '';
+		$courseVal = (string) $prog->CourseDescription;
+		$majorVal  = isset($prog->Major) ? (string) $prog->Major : '';
 
-    // --- Fetch students
-    $this->load->model('StudentModel');
-    if (method_exists($this->StudentModel, 'bySYCourseMajor')) {
-        $students = $this->StudentModel->bySYCourseMajor($sy, $sem, $courseVal, $majorVal);
-        if (!is_array($students)) $students = (array)$students;
-    } else {
-        $this->db->where('SY', $sy)
-                 ->where('Semester', $sem)
-                 ->where('Status', 'Enrolled')
-                 ->where('Course', $courseVal);
-        if ($majorVal !== '') $this->db->where('Major', $majorVal);
-        $students = $this->db->get('semesterstude')->result();
-        if (!is_array($students)) $students = (array)$students;
-    }
+		// --- Fetch students
+		$this->load->model('StudentModel');
+		if (method_exists($this->StudentModel, 'bySYCourseMajor')) {
+			$students = $this->StudentModel->bySYCourseMajor($sy, $sem, $courseVal, $majorVal);
+			if (!is_array($students)) $students = (array)$students;
+		} else {
+			$this->db->where('SY', $sy)
+				->where('Semester', $sem)
+				->where('Status', 'Enrolled')
+				->where('Course', $courseVal);
+			if ($majorVal !== '') $this->db->where('Major', $majorVal);
+			$students = $this->db->get('semesterstude')->result();
+			if (!is_array($students)) $students = (array)$students;
+		}
 
-    // --- Group for summaries
-    foreach ($students as $s) {
-        $yl  = isset($s->YearLevel) ? (string)$s->YearLevel : 'N/A';
-        $sec = isset($s->Section)   ? (string)$s->Section   : 'N/A';
+		// --- Group for summaries
+		foreach ($students as $s) {
+			$yl  = isset($s->YearLevel) ? (string)$s->YearLevel : 'N/A';
+			$sec = isset($s->Section)   ? (string)$s->Section   : 'N/A';
 
-        if (!isset($studentsByYear[$yl]))           $studentsByYear[$yl] = [];
-        if (!isset($sectionsByYear[$yl]))           $sectionsByYear[$yl] = [];
-        if (!isset($sectionsByYear[$yl][$sec]))     $sectionsByYear[$yl][$sec] = 0;
+			if (!isset($studentsByYear[$yl]))           $studentsByYear[$yl] = [];
+			if (!isset($sectionsByYear[$yl]))           $sectionsByYear[$yl] = [];
+			if (!isset($sectionsByYear[$yl][$sec]))     $sectionsByYear[$yl][$sec] = 0;
 
-        $studentsByYear[$yl][] = $s;
-        $sectionsByYear[$yl][$sec]++;
-    }
+			$studentsByYear[$yl][] = $s;
+			$sectionsByYear[$yl][$sec]++;
+		}
 
-    // --- Flags (one query for all students)
-    $sns = [];
-    foreach ($students as $s) {
-        if (!empty($s->StudentNumber)) $sns[] = (string)$s->StudentNumber;
-    }
-    $sns = array_values(array_unique($sns));
+		// --- Flags (one query for all students)
+		$sns = [];
+		foreach ($students as $s) {
+			if (!empty($s->StudentNumber)) $sns[] = (string)$s->StudentNumber;
+		}
+		$sns = array_values(array_unique($sns));
 
-    if (!empty($sns)) {
-        $this->load->model('FlagModel'); // expects counts_for_students()
-        if (method_exists($this->FlagModel, 'counts_for_students')) {
-            // expected: [ "2025xxxx" => ["total"=>N, "unsettled"=>M], ... ]
-            $flagCounts = $this->FlagModel->counts_for_students($sns) ?: [];
-        } else {
-            // fallback if you don't have a helper; compute counts from table
-            $rows = $this->db->select('StudentNumber, status')
-                             ->from('student_flags')
-                             ->where_in('StudentNumber', $sns)
-                             ->where('status <>', 'Deleted') // optional
-                             ->get()->result();
+		if (!empty($sns)) {
+			$this->load->model('FlagModel'); // expects counts_for_students()
+			if (method_exists($this->FlagModel, 'counts_for_students')) {
+				// expected: [ "2025xxxx" => ["total"=>N, "unsettled"=>M], ... ]
+				$flagCounts = $this->FlagModel->counts_for_students($sns) ?: [];
+			} else {
+				// fallback if you don't have a helper; compute counts from table
+				$rows = $this->db->select('StudentNumber, status')
+					->from('student_flags')
+					->where_in('StudentNumber', $sns)
+					->where('status <>', 'Deleted') // optional
+					->get()->result();
 
-            // summarize
-            foreach ($rows as $r) {
-                $sn = (string)$r->StudentNumber;
-                if (!isset($flagCounts[$sn])) $flagCounts[$sn] = ['total'=>0,'unsettled'=>0];
-                $flagCounts[$sn]['total']++;
-                if (strcasecmp((string)$r->status, 'Active') === 0) {
-                    $flagCounts[$sn]['unsettled']++;
-                }
-            }
-        }
-    }
+				// summarize
+				foreach ($rows as $r) {
+					$sn = (string)$r->StudentNumber;
+					if (!isset($flagCounts[$sn])) $flagCounts[$sn] = ['total' => 0, 'unsettled' => 0];
+					$flagCounts[$sn]['total']++;
+					if (strcasecmp((string)$r->status, 'Active') === 0) {
+						$flagCounts[$sn]['unsettled']++;
+					}
+				}
+			}
+		}
 
-    // --- View
-    $data = [
-        'courseDescription' => $courseVal,
-        'major'             => $majorVal,
-        'students'          => $students,
-        'studentsByYear'    => $studentsByYear,
-        'sectionsByYear'    => $sectionsByYear,
-        'studentCount'      => count($students),
-        'sy'                => $sy,
-        'sem'               => $sem,
-        'flagCounts'        => $flagCounts, // << NEW
-    ];
+		// --- View
+		$data = [
+			'courseDescription' => $courseVal,
+			'major'             => $majorVal,
+			'students'          => $students,
+			'studentsByYear'    => $studentsByYear,
+			'sectionsByYear'    => $sectionsByYear,
+			'studentCount'      => count($students),
+			'sy'                => $sy,
+			'sem'               => $sem,
+			'flagCounts'        => $flagCounts, // << NEW
+		];
 
-    $this->load->view('enrolled_students_view1', $data);
-}
+		$this->load->view('enrolled_students_view1', $data);
+	}
 
 
 
@@ -6537,70 +6548,51 @@ public function uploadProfPic()
 	{
 		return is_numeric($v) ? (float)$v : 0;
 	}
-	
-public function editSignup($id = null)
-{
-    $id = $id ?: $this->input->get('id') ?: $this->uri->segment(3);
 
-    if (empty($id)) {
-        show_404(); // If no ID is found, show 404
-        return;
-    }
+	public function editSignup($id = null)
+	{
+		$id = $id ?: $this->input->get('id') ?: $this->uri->segment(3);
 
-    // Fetch the student data based on the ID
-    $student = $this->StudentModel->getstudentsignupbyId($id);  // Get student data
-    
-    // Check if data is found
-    if (empty($student)) {
-        show_error('Student not found');
-        return;
-    }
+		if (empty($id)) {
+			show_404(); // If no ID is found, show 404
+			return;
+		}
 
-    // Fetch options for dropdowns (Course, Major, Year Level, Section)
-    $result['courses'] = $this->StudentModel->get_courseTable();  // Fetch courses
-    $result['majors'] = $this->StudentModel->get_majors($student->Course1);  // Get majors based on Course1
-    $result['sections'] = $this->StudentModel->get_sections($student->Course1, $student->yearLevel);  // Get sections based on Course1 and YearLevel
-    $result['yearLevels'] = $this->StudentModel->get_year_levels();  // Fetch year levels
+		// Fetch the student data based on the ID
+		$student = $this->StudentModel->getstudentsignupbyId($id);  // Get student data
 
-    // Check if form is submitted
-    if ($this->input->post('submit')) {
-        // Collect form data, ensuring to update course and major fields properly
-$updatedData = [
-    'StudentNumber' => $this->input->post('StudentNumber'),
-    'FirstName'     => $this->input->post('FirstName'),
-    'MiddleName'    => $this->input->post('MiddleName'),
-    'LastName'      => $this->input->post('LastName'),
-    'Sex'           => $this->input->post('Sex'),
-    'CivilStatus'   => $this->input->post('CivilStatus'),
-    'BirthDate'     => $this->input->post('birthDate'),
-    'Age'           => $this->input->post('Age'),
-    'email'         => $this->input->post('email'),
-    'Course1'       => $this->input->post('Course1'),
-    'Course2'       => $this->input->post('Course2'),
-    'Course3'       => $this->input->post('Course3'),
-    'Major1'        => $this->input->post('Major1'),
-    'Major2'        => $this->input->post('Major2'),
-    'Major3'        => $this->input->post('Major3'),
-    'yearLevel'     => $this->input->post('YearLevel'),
-    'section'       => $this->input->post('Section'),
-    'Province'      => $this->input->post('Province'),
-    'City'          => $this->input->post('City'),
-    'Brgy'          => $this->input->post('Brgy'),
-    'Sitio'         => $this->input->post('Sitio'),
-];
+		// Check if data is found
+		if (empty($student)) {
+			show_error('Student not found');
+			return;
+		}
 
-        // Update the student record in the database
-        $this->StudentModel->updatestudentsignup($id, $updatedData);
+		// Explicitly block updates from this view
+		if ($this->input->method(true) === 'POST') {
+			$this->session->set_flashdata('danger', 'Editing student profiles is disabled for administrators.');
+			redirect('Page/profileList');
+			return;
+		}
 
-        // Set success message and redirect to profile list
-        $this->session->set_flashdata('success', 'Student profile updated successfully!');
-        redirect('Page/profileList');
-    }
+		// Fetch options for dropdowns (Course, Major, Year Level, Section)
+		$result['courses'] = $this->StudentModel->get_courseTable();  // Fetch courses
+		$result['majors'] = $this->StudentModel->get_majors($student->Course1);  // Get majors based on Course1
+		$result['sections'] = $this->StudentModel->get_sections($student->Course1, $student->yearLevel);  // Get sections based on Course1 and YearLevel
+		$result['yearLevels'] = $this->StudentModel->get_year_levels();  // Fetch year levels
 
-    // Pass the student data for the view
-    $result['data'] = $student;  // Pass the student object to the view
-    $this->load->view('profile_form_update', $result);
-}
+		// Location lists for read-only display
+		$province = trim((string)($student->Province ?? $student->province ?? ''));
+		$city     = trim((string)($student->City ?? $student->city ?? ''));
+
+		$result['provinces'] = $this->StudentModel->get_provinces();
+		$result['cities']    = $this->StudentModel->get_cities($province);
+		$result['barangays'] = $city !== '' ? $this->StudentModel->get_barangays($city) : [];
+
+		// Pass the student data for the view
+		$result['data']      = $student;  // Pass the student object to the view
+		$result['readOnly']  = true;
+		$this->load->view('profile_form_update', $result);
+	}
 
 
 
@@ -6621,24 +6613,25 @@ $updatedData = [
 		$this->load->view('manage_sections', $data);
 	}
 
-	public function addSection() {
-        if ($this->input->post()) {
-            // Get data from the form
-            $sectionData = [
-                'courseid'   => $this->input->post('courseid'),
-                'year_level' => $this->input->post('year_level'),
-            'section'    => $this->input->post('section'),
-            'is_active'  => 1
-        ];
+	public function addSection()
+	{
+		if ($this->input->post()) {
+			// Get data from the form
+			$sectionData = [
+				'courseid'   => $this->input->post('courseid'),
+				'year_level' => $this->input->post('year_level'),
+				'section'    => $this->input->post('section'),
+				'is_active'  => 1
+			];
 
-        // Insert data into the database
-        $inserted = $this->CourseSectionModel->addSection($sectionData);
-        if ($inserted) {
-            $this->session->set_flashdata('success', 'Section added successfully.');
-        } else {
-            $this->session->set_flashdata('error', 'Failed to add the section. Please try again.');
-        }
-        redirect('Page/manageSections');
+			// Insert data into the database
+			$inserted = $this->CourseSectionModel->addSection($sectionData);
+			if ($inserted) {
+				$this->session->set_flashdata('success', 'Section added successfully.');
+			} else {
+				$this->session->set_flashdata('error', 'Failed to add the section. Please try again.');
+			}
+			redirect('Page/manageSections');
 		} else {
 			// Rare direct GET access to addSection: reload manage sections with data
 			$data['sections']   = $this->CourseSectionModel->getAllSections();
@@ -6654,26 +6647,27 @@ $updatedData = [
 
 			$this->load->view('manage_sections', $data);
 		}
-    }
+	}
 
-    // Edit Section
-    public function editSection($id) {
-        if ($this->input->post()) {
-            // Get updated section data from the form
-            $sectionData = [
-                'courseid'   => $this->input->post('courseid'),
-                'year_level' => $this->input->post('year_level'),
-                'section'    => $this->input->post('section')
-            ];
+	// Edit Section
+	public function editSection($id)
+	{
+		if ($this->input->post()) {
+			// Get updated section data from the form
+			$sectionData = [
+				'courseid'   => $this->input->post('courseid'),
+				'year_level' => $this->input->post('year_level'),
+				'section'    => $this->input->post('section')
+			];
 
-            // Update the section in the database
-            $updated = $this->CourseSectionModel->updateSection($id, $sectionData);
-            if ($updated) {
-                $this->session->set_flashdata('success', 'Section updated successfully.');
-            } else {
-                $this->session->set_flashdata('error', 'Failed to update the section. Please try again.');
-            }
-            redirect('Page/manageSections');
+			// Update the section in the database
+			$updated = $this->CourseSectionModel->updateSection($id, $sectionData);
+			if ($updated) {
+				$this->session->set_flashdata('success', 'Section updated successfully.');
+			} else {
+				$this->session->set_flashdata('error', 'Failed to update the section. Please try again.');
+			}
+			redirect('Page/manageSections');
 		} else {
 			// Fetch section by ID for pre-filled form
 			$data['section']    = $this->CourseSectionModel->getSectionById($id);
@@ -6689,16 +6683,17 @@ $updatedData = [
 
 			$this->load->view('edit_section', $data);
 		}
-    }
+	}
 
-    // Delete Section
-    public function deleteSection($id) {
-        $deleted = $this->CourseSectionModel->deleteSection($id);
-        if ($deleted) {
-            $this->session->set_flashdata('success', 'Section deleted successfully.');
-        } else {
-            $this->session->set_flashdata('error', 'Failed to delete the section. Please try again.');
-        }
-        redirect('Page/manageSections');
-    }
+	// Delete Section
+	public function deleteSection($id)
+	{
+		$deleted = $this->CourseSectionModel->deleteSection($id);
+		if ($deleted) {
+			$this->session->set_flashdata('success', 'Section deleted successfully.');
+		} else {
+			$this->session->set_flashdata('error', 'Failed to delete the section. Please try again.');
+		}
+		redirect('Page/manageSections');
+	}
 }

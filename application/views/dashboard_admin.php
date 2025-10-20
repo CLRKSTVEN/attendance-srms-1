@@ -537,7 +537,7 @@
                           </table>
                         </div>
                       </div>
-                      <!-- By Major -->
+                      <!-- By Major
                       <div class="enroll-col">
                         <h6 class="mb-3 text-uppercase text-muted">By Major</h6>
                         <div class="table-responsive">
@@ -568,7 +568,7 @@
                             </tbody>
                           </table>
                         </div>
-                      </div>
+                      </div> -->
 
                       <!-- By Year Level -->
                       <div class="enroll-col">

@@ -8,6 +8,7 @@
   <link rel="icon" type="<?= base_url(); ?>assets/image/png" href="<?= base_url(); ?>assets/images/Attendance.png" />
   <link rel="stylesheet" href="<?= base_url(); ?>assets/vendor/bootstrap/css/bootstrap.min.css">
   <link rel="stylesheet" href="<?= base_url(); ?>assets/fonts/font-awesome-4.7.0/css/font-awesome.min.css">
+  <link rel="stylesheet" href="<?= base_url(); ?>assets/libs/sweetalert2/sweetalert2.min.css">
 
   <style>
     :root{
@@ -193,8 +194,14 @@
         <h2 class="title">Login</h2>
         <div class="sub">Enter your account details</div>
 
-        <?php if ($this->session->flashdata('msg')): ?>
-          <div class="flash"><?= $this->session->flashdata('msg'); ?></div>
+        <?php
+          $flashDanger    = $this->session->flashdata('danger');
+          $flashMsg       = $this->session->flashdata('msg');
+          $loginErrorRaw  = $flashDanger ?: $flashMsg;
+          $loginErrorText = is_string($loginErrorRaw) ? trim(strip_tags($loginErrorRaw)) : '';
+        ?>
+        <?php if (!empty($loginErrorText)): ?>
+          <div class="flash" id="login-error-message"><?= htmlspecialchars($loginErrorText, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
 
         <form action="<?= site_url('Login/auth'); ?>" method="post" novalidate>
@@ -244,6 +251,7 @@
   <script src="<?= base_url(); ?>assets/vendor/jquery/jquery-3.2.1.min.js"></script>
   <script src="<?= base_url(); ?>assets/vendor/bootstrap/js/popper.js"></script>
   <script src="<?= base_url(); ?>assets/vendor/bootstrap/js/bootstrap.min.js"></script>
+  <script src="<?= base_url(); ?>assets/libs/sweetalert2/sweetalert2.min.js"></script>
   <script>
     (function(){
       var btn = document.getElementById('togglePass');
@@ -270,6 +278,36 @@
         }
       }
       window.addEventListener('load', focusLogin);
+    })();
+  </script>
+  <script>
+    (function () {
+      var loginError = <?= json_encode($loginErrorText ?? ''); ?>;
+      if (!loginError) {
+        return;
+      }
+
+      var fallback = document.getElementById('login-error-message');
+
+      var showAlert = function () {
+        if (window.Swal && typeof window.Swal.fire === 'function') {
+          window.Swal.fire({
+            icon: 'error',
+            title: 'Incorrect Credentials',
+            text: loginError,
+            confirmButtonColor: '#dc3545'
+          });
+          if (fallback) {
+            fallback.style.display = 'none';
+          }
+        }
+      };
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', showAlert);
+      } else {
+        showAlert();
+      }
     })();
   </script>
 

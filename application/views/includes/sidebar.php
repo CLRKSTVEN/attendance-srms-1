@@ -127,7 +127,6 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                                             <label class="custom-control-label" for="qrPosterSwitch"></label>
                                         </div>
                                     </div>
-                                    <div class="text-muted small mt-1">(On = Poster, Off = Scanner)</div>
                                 </li>
                             <?php endif; ?>
                         </ul>
