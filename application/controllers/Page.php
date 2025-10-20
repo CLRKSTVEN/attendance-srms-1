@@ -2675,7 +2675,6 @@ class Page extends CI_Controller
 		$result['data'] = $this->StudentModel->signUpList();
 		$this->load->view('student_signup_update', $result);
 	}
-
 	public function deleteSignup()
 	{
 		// Require login
@@ -2700,11 +2699,11 @@ class Page extends CI_Controller
 		}
 
 		// Inputs (POST)
-		$studno = $this->input->post('id', true);      // StudentNumber
-		$email  = $this->input->post('email', true);   // optional (legacy)
-		$return_level = $this->input->post('return_level', true);
+		$studno       = trim((string)$this->input->post('id', true));   // StudentNumber
+		$email        = trim((string)$this->input->post('email', true)); // optional legacy
+		$return_level = trim((string)$this->input->post('return_level', true));
 
-		if (!$studno) {
+		if ($studno === '') {
 			$this->session->set_flashdata('danger', 'No StudentNumber provided.');
 			redirect($this->input->server('HTTP_REFERER') ?: 'Page/profileList');
 			return;
@@ -2713,37 +2712,58 @@ class Page extends CI_Controller
 		// Start atomic delete across all related tables
 		$this->db->trans_start();
 
-		// (1) Delete semester enrollments
-		// NOTE: This removes ALL rows for the student in semesterstude.
-		// If you only want the current SY/semester, add ->where('SY', $currentSY)->where('Semester', $currentSem)
+		// (1) semesterstude
 		$this->db->delete('semesterstude', ['StudentNumber' => $studno]);
+		$aff_semesterstude = $this->db->affected_rows();
 
-		// (2) Delete the signup/registration
+		// (2) studentsignup
 		$this->db->delete('studentsignup', ['StudentNumber' => $studno]);
-		// (2b) Remove any saved profile card for the student
+		$aff_studentsignup = $this->db->affected_rows();
+
+		// (2b) studeprofile (if present)
 		$this->db->delete('studeprofile', ['StudentNumber' => $studno]);
-		// Primary rule: username == StudentNumber; limit to student-ish roles to avoid staff deletions
+		$aff_studeprofile = $this->db->affected_rows();
+
+		// (3) o_users (limit to student-type accounts so you don't remove staff by accident)
 		$this->db->where('username', $studno)
 			->group_start()
 			->where('position', 'Student')
 			->or_where('position', 'Stude Applicant')
 			->group_end()
 			->delete('o_users');
+		$aff_users_by_username = $this->db->affected_rows();
 
-		// Optional: legacy cleanup by email (if your older system used email usernames)
-		if (!empty($email)) {
+		// Optional legacy cleanup by email
+		$aff_users_by_email = 0;
+		if ($email !== '') {
 			$this->db->delete('o_users', ['email' => $email]);
+			$aff_users_by_email = $this->db->affected_rows();
 		}
+
+		// (4) ✅ NEW: student_qr — remove any QR tokens for this student
+		$this->db->delete('student_qr', ['student_number' => $studno]);
+		$aff_student_qr = $this->db->affected_rows();
+
+		// (4b) (Optional) remove QR image file if you store one like /upload/qr/{StudentNumber}.png
+		// $qrPng = FCPATH . 'upload/qr/' . $studno . '.png';
+		// if (is_file($qrPng)) { @unlink($qrPng); }
 
 		$this->db->trans_complete();
 
 		if (!$this->db->trans_status()) {
 			$this->session->set_flashdata('danger', 'Delete failed. Please try again or check logs.');
 		} else {
-			$this->session->set_flashdata(
-				'success',
-				'Deleted registration, profile, semester records, and user account for ' . $studno . '.'
+			$msg = sprintf(
+				'Deleted %s — semesterstude:%d, studentsignup:%d, studeprofile:%d, o_users(user:%d,email:%d), student_qr:%d',
+				htmlspecialchars($studno, ENT_QUOTES, 'UTF-8'),
+				$aff_semesterstude,
+				$aff_studentsignup,
+				$aff_studeprofile,
+				$aff_users_by_username,
+				$aff_users_by_email,
+				$aff_student_qr
 			);
+			$this->session->set_flashdata('success', $msg);
 		}
 
 		// Redirect back
@@ -2751,9 +2771,10 @@ class Page extends CI_Controller
 			redirect('Masterlist/byGradeYL?yearlevel=' . rawurlencode($return_level));
 		} else {
 			$ref = $this->input->server('HTTP_REFERER');
-			redirect($ref ? $ref : 'Page/profileList');
+			redirect($ref ?: 'Page/profileList');
 		}
 	}
+
 
 	//Profile List for Enrollment
 	function profileForEnrollment()
