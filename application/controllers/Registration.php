@@ -293,15 +293,12 @@ class Registration extends CI_Controller
                     $this->session->set_flashdata('danger', 'Registration saved, but email could not be sent.');
                     return redirect('Registration/index?source=admin'); // or your admin list route
                 } else {
-                    // Public signup: keep them on the form with a message, or send to login with info
+                    // Public signup → go to login with an INFO SweetAlert
                     $this->session->set_flashdata(
-                        'msg',
-                        '<div class="alert alert-warning text-center"><b>Registration saved, but email could not be sent.</b><br>Please contact the registrar.</div>'
+                        'info_message',
+                        'Registration saved, but email could not be sent. Please contact the registrar.'
                     );
-                    return redirect('Registration/index');
-                    // Or, if you implemented info_message on login page:
-                    // $this->session->set_flashdata('info_message','Registration saved but email could not be sent.');
-                    // return redirect('login');
+                    return redirect('login');
                 }
             }
             if ($isAdminFlow) {
@@ -309,14 +306,11 @@ class Registration extends CI_Controller
                 $this->session->set_flashdata('success', 'Account created. Login credentials were emailed to the user.');
                 return redirect('Page/profileList'); // or your admin list page
             } else {
-                // 🌐 Public self-signup → send them to login (or keep on form), but not as an auth error
+                // 🌐 Public self-signup → go to login with an INFO SweetAlert
                 $this->session->set_flashdata(
-                    'msg',
-                    '<div class="alert alert-success text-center"><b>Registration successful. Check your email for login credentials.</b></div>'
+                    'info_message',
+                    'Registration successful. Check your email for login credentials.'
                 );
-                return redirect('Page/profileList'); // or redirect('login') if you prefer
-                // If you added info_message on login view, use:
-                $this->session->set_flashdata('info_message', 'Registration successful. Check your email for login credentials.');
                 return redirect('login');
             }
         }

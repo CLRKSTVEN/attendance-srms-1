@@ -337,12 +337,13 @@
 
         <h2 class="title">Login</h2>
         <div class="sub">Enter your account details</div>
-
         <?php
         $authError      = $this->session->flashdata('auth_error');
         $loginErrorText = is_string($authError) ? trim(strip_tags($authError)) : '';
 
+        $infoMessage    = $this->session->flashdata('info_message') ?: '';
         ?>
+
         <?php if (!empty($loginErrorText)): ?>
           <div class="flash" id="login-error-message"><?= htmlspecialchars($loginErrorText, ENT_QUOTES, 'UTF-8'); ?></div>
         <?php endif; ?>
@@ -430,25 +431,35 @@
   </script>
   <script>
     (function() {
-      var loginError = <?= json_encode($loginErrorText ?? ''); ?>;
-      if (!loginError) return;
+      var loginError = <?= json_encode($loginErrorText ?? ''); ?>; // from auth_error
+      var infoMsg = <?= json_encode($infoMessage ?? ''); ?>; // from info_message
 
-      var isAuthError = /invalid|incorrect|not active|failed/i.test(loginError);
+      if (!loginError && !infoMsg) return;
 
-      var opts = {
-        icon: isAuthError ? 'error' : 'info',
-        title: isAuthError ? 'Sign-in failed' : 'Heads up',
+      var isAuthError = /invalid|incorrect|not active|failed|unauthorized|email not found/i.test(loginError || '');
+
+      var opts = isAuthError ? {
+        icon: 'error',
+        title: 'Sign-in failed',
         text: loginError,
-        confirmButtonColor: isAuthError ? '#dc3545' : '#0d6efd'
+        confirmButtonColor: '#dc3545'
+      } : {
+        icon: 'info',
+        title: 'Success',
+        text: infoMsg,
+        confirmButtonColor: '#0d6efd'
       };
 
       var fallback = document.getElementById('login-error-message');
       if (window.Swal && typeof window.Swal.fire === 'function') {
         window.Swal.fire(opts);
         if (fallback) fallback.style.display = 'none';
-      } else if (fallback) {
-        fallback.style.display = 'block';
-        fallback.textContent = loginError;
+      } else if (fallback && (loginError || infoMsg)) {
+        // Fallback to inline message only for auth errors
+        if (loginError) {
+          fallback.style.display = 'block';
+          fallback.textContent = loginError;
+        }
       }
     })();
   </script>
