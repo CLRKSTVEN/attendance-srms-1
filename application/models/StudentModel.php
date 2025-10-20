@@ -1661,7 +1661,12 @@ public function SexCount($sem = null, $sy = null)
 				TRIM(COALESCE(NULLIF(s.FirstName, ''), NULLIF(sp.FirstName, ''), NULLIF(ou.fName, ''), '')) AS FirstName,
 				TRIM(COALESCE(NULLIF(s.MiddleName, ''), NULLIF(sp.MiddleName, ''), NULLIF(ou.mName, ''), '')) AS MiddleName,
 				TRIM(s.StudentNumber)                                                                     AS StudentNumber,
-				NULLIF(s.birthDate, '')                                                                    AS birthDate,
+				CASE
+					WHEN s.birthDate IS NULL
+						OR s.birthDate = '0000-00-00'
+					THEN NULL
+					ELSE DATE_FORMAT(s.birthDate, '%Y-%m-%d')
+				END                                                                                   AS birthDate,
 				NULLIF(s.yearLevel, '')                                                                    AS yearLevel,
 				NULLIF(s.section, '')                                                                      AS section,
 				NULLIF(s.Status, '')                                                                       AS signupStatus,
@@ -1679,7 +1684,12 @@ public function SexCount($sem = null, $sy = null)
 				TRIM(COALESCE(NULLIF(sp.FirstName, ''), NULLIF(ou.fName, ''), '')) AS FirstName,
 				TRIM(COALESCE(NULLIF(sp.MiddleName, ''), NULLIF(ou.mName, ''), '')) AS MiddleName,
 				TRIM(ou.username)                                                  AS StudentNumber,
-				NULLIF(sp.birthDate, '')                                           AS birthDate,
+				CASE
+					WHEN sp.birthDate IS NULL
+						OR sp.birthDate = '0000-00-00'
+					THEN NULL
+					ELSE DATE_FORMAT(sp.birthDate, '%Y-%m-%d')
+				END                                                                   AS birthDate,
 				NULL                                                               AS yearLevel,
 				NULL                                                               AS section,
 				COALESCE(NULLIF(ou.acctStat, ''), 'Registered')                    AS signupStatus,
