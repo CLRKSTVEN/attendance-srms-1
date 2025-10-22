@@ -44,6 +44,18 @@
               </div>
             </div>
           </div>
+          <!-- Manual Remarks (optional) -->
+          <div class="row mb-2" id="manual-remarks-row">
+            <div class="col d-flex align-items-center">
+              <input id="remarkInline"
+                class="form-control form-control-sm"
+                placeholder="Remarks (optional)"
+                style="min-width:280px; max-width:520px;">
+              <small class="text-muted ml-2">
+                Leave blank → saved as <b>“Scanned via QR”</b>.
+              </small>
+            </div>
+          </div>
 
           <!-- Scan Mode selector -->
           <div class="row mb-2">
@@ -403,6 +415,16 @@
       const lrSN = document.getElementById('lrSN');
       const lrPhoto = document.getElementById('lrPhoto');
       const lrIcon = document.getElementById('lrIcon');
+      // --- Manual remarks input ---
+      const remarkInline = document.getElementById('remarkInline');
+
+      function getManualRemarks() {
+        return remarkInline && remarkInline.value ? remarkInline.value.trim() : '';
+      }
+
+      function clearRemarks() {
+        if (remarkInline) remarkInline.value = '';
+      }
 
       // --- Scan mode (button UI) ---
       let scanMode = 'in';
@@ -693,17 +715,15 @@
           }
 
           const cfg = isIOS ? iosConfig() : defaultConfig();
-          const cameraConfig = cameraDeviceId ?
-            {
-              deviceId: {
-                exact: cameraDeviceId
-              }
-            } :
-            {
-              facingMode: {
-                ideal: 'environment'
-              }
-            };
+          const cameraConfig = cameraDeviceId ? {
+            deviceId: {
+              exact: cameraDeviceId
+            }
+          } : {
+            facingMode: {
+              ideal: 'environment'
+            }
+          };
 
           await qr.start(cameraConfig, cfg, onScanSuccess, onScanFailure);
           running = true;
@@ -788,7 +808,11 @@
         body.set('activity_id', payload.activity);
         body.set('token', payload.token);
         body.set('direction', scanMode || 'auto');
-
+        // send manual remarks (falls back to "Scanned via QR" if empty)
+        const manualRemarks = getManualRemarks();
+        if (manualRemarks !== '') {
+          body.set('remarks', manualRemarks);
+        }
         if (window.__CSRF__ && __CSRF__.name && __CSRF__.value) {
           body.set(__CSRF__.name, __CSRF__.value);
         }
@@ -853,7 +877,7 @@
             }
 
             showLastRecorded(studentPayload || (j.student_number || payload.token), outcome);
-
+            clearRemarks();
             if (pauseOnHit) {
               showProfileCard(studentPayload || (j.student_number || payload.token), outcome,
                 j.message || (j.session ? `Session: ${j.session}` : ''));
@@ -929,8 +953,7 @@
         pName.textContent = prof.name ? prof.name : 'Unknown Student';
         pSN.textContent = prof.number || prof.sn || '—';
         // prefer section over major for activities
-        pMeta.textContent = (prof.course || prof.section) ?
-          [prof.course, prof.section].filter(Boolean).join(' • ') :
+        pMeta.textContent = (prof.course || prof.section) ? [prof.course, prof.section].filter(Boolean).join(' • ') :
           (msg || '—');
         applyPhoto(pPhoto, pIcon, prof.photo_url);
 

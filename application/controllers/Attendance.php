@@ -1,214 +1,247 @@
 <?php
-defined('BASEPATH') OR exit('No direct script access allowed');
+defined('BASEPATH') or exit('No direct script access allowed');
 
-class Attendance extends CI_Controller {
-    public function __construct(){
+class Attendance extends CI_Controller
+{
+    public function __construct()
+    {
         parent::__construct();
         $this->load->database();
         $this->load->helper(['url']);
         $this->load->library(['session']);
         $this->load->model('Student_qr_model');
         $this->load->model('Activity_attendance_model');
-        $this->load->model('Activities_model','ActivitiesModel');
+        $this->load->model('Activities_model', 'ActivitiesModel');
     }
 
-    public function scan($activity_id){
+    public function scan($activity_id)
+    {
         $activity = $this->ActivitiesModel->find((int)$activity_id);
         if (!$activity) show_404();
         $data['activity'] = $activity;
         $this->load->view('scan_page', $data);
     }
 
-    public function consume(){
-    if ($this->input->method() !== 'post') {
-        return $this->output->set_status_header(405)->set_output('Method Not Allowed');
-    }
+    public function consume()
+    {
+        if ($this->input->method() !== 'post') {
+            return $this->output->set_status_header(405)->set_output('Method Not Allowed');
+        }
 
-    $activity_id = (int)$this->input->post('activity_id');
-    $raw         = (string)$this->input->post('token');
-    $direction   = strtolower((string)$this->input->post('direction'));
+        $activity_id = (int)$this->input->post('activity_id');
+        $raw         = (string)$this->input->post('token');
+        $direction   = strtolower((string)$this->input->post('direction'));
 
-    if (!in_array($direction, ['in','out','auto'], true)) {
-        $direction = 'auto';
-    }
+        if (!in_array($direction, ['in', 'out', 'auto'], true)) {
+            $direction = 'auto';
+        }
 
-    if (!$activity_id || $raw === '') {
-        return $this->output->set_status_header(400)->set_output('Missing activity/token');
-    }
+        if (!$activity_id || $raw === '') {
+            return $this->output->set_status_header(400)->set_output('Missing activity/token');
+        }
 
-    // --- Normalize $raw into a bare 32-hex token
-    $token = trim($raw);
+        // --- Normalize $raw into a bare 32-hex token
+        $token = trim($raw);
 
-    // Case A: "ACTIVITY|TOKEN"
-    if (strpos($token, '|') !== false) {
-        $parts = explode('|', $token);
-        if (count($parts) >= 2) $token = trim($parts[1]);
-    }
+        // Case A: "ACTIVITY|TOKEN"
+        if (strpos($token, '|') !== false) {
+            $parts = explode('|', $token);
+            if (count($parts) >= 2) $token = trim($parts[1]);
+        }
 
-    // Case B: Full URL "...?token=xxxx"
-    if (stripos($token, 'http://') === 0 || stripos($token, 'https://') === 0) {
-        $q = parse_url($token, PHP_URL_QUERY);
-        if ($q) {
-            parse_str($q, $qs);
-            if (!empty($qs['token'])) {
-                $token = trim($qs['token']);
+        // Case B: Full URL "...?token=xxxx"
+        if (stripos($token, 'http://') === 0 || stripos($token, 'https://') === 0) {
+            $q = parse_url($token, PHP_URL_QUERY);
+            if ($q) {
+                parse_str($q, $qs);
+                if (!empty($qs['token'])) {
+                    $token = trim($qs['token']);
+                }
             }
         }
-    }
 
-    // Case C: URL path containing ".../checkin/<id>?token=xxxx"
-    if (!preg_match('/^[A-Fa-f0-9]{32}$/', $token)) {
-        // last-resort: pull last 32-hex from the string
-        if (preg_match('/([A-Fa-f0-9]{32})/', $raw, $m)) {
-            $token = $m[1];
+        // Case C: URL path containing ".../checkin/<id>?token=xxxx"
+        if (!preg_match('/^[A-Fa-f0-9]{32}$/', $token)) {
+            // last-resort: pull last 32-hex from the string
+            if (preg_match('/([A-Fa-f0-9]{32})/', $raw, $m)) {
+                $token = $m[1];
+            }
         }
-    }
 
-    $old_debug = $this->db->db_debug; $this->db->db_debug = FALSE;
+        $old_debug = $this->db->db_debug;
+        $this->db->db_debug = FALSE;
 
-    $op = $this->Activity_attendance_model->consume_token($activity_id, $token, $direction);
+        $op = $this->Activity_attendance_model->consume_token($activity_id, $token, $direction);
 
-    // annotate rows
-    if (!empty($op['ok']) && $op['ok'] && isset($op['mode']) && !empty($op['id'])) {
-        $checkedBy = (string)$this->session->userdata('name')
-                  ?: (string)$this->session->userdata('username')
-                  ?: (string)$this->session->userdata('IDNumber')
-                  ?: 'Scanner';
+        // annotate rows
+        $postedRemarks = trim((string)$this->input->post('remarks', true)); // from scan_page.js
+        if (!empty($op['ok']) && $op['ok'] && isset($op['mode']) && !empty($op['id'])) {
+            $rowId = (int)$op['id'];
+            $mode  = (string)$op['mode'];
 
-        if ($op['mode'] === 'checked_in') {
-            $this->db->where('id', (int)$op['id'])
-                     ->group_start()->where('checked_in_by IS NULL', null, false)->or_where('checked_in_by','')->group_end()
-                     ->set('checked_in_by', $checkedBy)->update('activity_attendance');
+            $checkedBy = (string)$this->session->userdata('name')
+                ?: (string)$this->session->userdata('username')
+                ?: (string)$this->session->userdata('IDNumber')
+                ?: 'Scanner';
 
-            $this->db->where('id', (int)$op['id'])
-                     ->group_start()->where('remarks IS NULL', null, false)->or_where('remarks','')->group_end()
-                     ->set('remarks', 'Scanned via QR')->update('activity_attendance');
+            if ($mode === 'checked_in') {
+                // set checked_in_by if empty
+                $this->db->where('id', $rowId)
+                    ->group_start()->where('checked_in_by IS NULL', null, false)->or_where('checked_in_by', '')->group_end()
+                    ->set('checked_in_by', $checkedBy)->update('activity_attendance');
 
-            $this->db->where('id', (int)$op['id'])
-                     ->group_start()->where('source IS NULL', null, false)->or_where('source','')->group_end()
-                     ->set('source', 'qr')->update('activity_attendance');
+                // remarks: prefer manual; else default only if still empty/null
+                if ($postedRemarks !== '') {
+                    if (mb_strlen($postedRemarks) > 120) {
+                        $postedRemarks = mb_substr($postedRemarks, 0, 120);
+                    }
+                    $this->db->where('id', $rowId)
+                        ->set('remarks', $postedRemarks)
+                        ->update('activity_attendance');
+                } else {
+                    $this->db->where('id', $rowId)
+                        ->group_start()->where('remarks IS NULL', null, false)->or_where('remarks', '')->group_end()
+                        ->set('remarks', 'Scanned via QR')
+                        ->update('activity_attendance');
+                }
 
-        } elseif ($op['mode'] === 'checked_out') {
-            $this->db->where('id', (int)$op['id'])
-                     ->group_start()->where('remarks IS NULL', null, false)->or_where('remarks','')->group_end()
-                     ->set('remarks', 'Checked out via QR')->update('activity_attendance');
+                // source default if empty
+                $this->db->where('id', $rowId)
+                    ->group_start()->where('source IS NULL', null, false)->or_where('source', '')->group_end()
+                    ->set('source', 'qr')->update('activity_attendance');
+            } elseif ($mode === 'checked_out') {
+                // treat literal fallback as empty
+                $isFallback = (strcasecmp($postedRemarks, 'Scanned via QR') === 0);
+
+                if ($postedRemarks !== '' && !$isFallback) {
+                    // only overwrite if a *real* manual remark was provided
+                    if (mb_strlen($postedRemarks) > 120) $postedRemarks = mb_substr($postedRemarks, 0, 120);
+                    $this->db->where('id', $rowId)->set('remarks', $postedRemarks)->update('activity_attendance');
+                } else {
+                    // only set default if still empty
+                    $this->db->where('id', $rowId)
+                        ->group_start()->where('remarks IS NULL', null, false)->or_where('remarks', '')->group_end()
+                        ->set('remarks', 'Scanned via QR')
+                        ->update('activity_attendance');
+                }
+            }
         }
+
+        $this->db->db_debug = $old_debug;
+
+        return $this->output->set_content_type('application/json')
+            ->set_output(json_encode($op));
     }
+    public function checkin($activity_id)
+    {
+        $activity_id = (int)$activity_id;
 
-    $this->db->db_debug = $old_debug;
+        // pass-through ?direction=in|out|auto (default auto)
+        $direction = strtolower((string)$this->input->get('direction', true));
+        if (!in_array($direction, ['in', 'out', 'auto'], true)) {
+            $direction = 'auto';
+        }
 
-    return $this->output->set_content_type('application/json')
-        ->set_output(json_encode($op));
-}
-public function checkin($activity_id){
-    $activity_id = (int)$activity_id;
+        // auth + role
+        $rawLevel = (string)$this->session->userdata('level');
+        $loggedIn = (bool)$this->session->userdata('logged_in');
+        $isStudent = (bool) preg_match('/^student(?:\s+applicant)?$/i', trim($rawLevel))
+            || (bool) preg_match('/^stude(?:\s+applicant)?$/i', trim($rawLevel));
+        $nextPath = 'attendance/checkin/' . $activity_id . ($direction ? ('?direction=' . $direction) : '');
 
-    // pass-through ?direction=in|out|auto (default auto)
-    $direction = strtolower((string)$this->input->get('direction', true));
-    if (!in_array($direction, ['in','out','auto'], true)) {
-        $direction = 'auto';
-    }
+        if (!$loggedIn) {
+            redirect(site_url('login') . '?next=' . urlencode($nextPath));
+            return;
+        }
+        if (!$isStudent) {
+            // Render friendly message instead of show_error
+            $data = [
+                'activity_id'    => $activity_id,
+                'student_number' => null,
+                'result'         => [
+                    'ok'      => false,
+                    'mode'    => 'err',
+                    'message' => 'This check-in link is for student accounts only. You are currently logged in as: ' . ($rawLevel ?: 'Unknown') . '.'
+                ],
+            ];
+            $this->output->set_status_header(200);
+            $this->load->view('activity_join_result', $data);
+            return;
+        }
 
-    // auth + role
-    $rawLevel = (string)$this->session->userdata('level');
-    $loggedIn = (bool)$this->session->userdata('logged_in');
-    $isStudent = (bool) preg_match('/^student(?:\s+applicant)?$/i', trim($rawLevel))
-              || (bool) preg_match('/^stude(?:\s+applicant)?$/i', trim($rawLevel));
-    $nextPath = 'attendance/checkin/'.$activity_id.($direction ? ('?direction='.$direction) : '');
+        // Resolve student number
+        $student_number =
+            (string)$this->session->userdata('username')
+            ?: (string)$this->session->userdata('student_number')
+            ?: (string)$this->session->userdata('studentnumber');
 
-    if (!$loggedIn) {
-        redirect(site_url('login') . '?next=' . urlencode($nextPath));
-        return;
-    }
-    if (!$isStudent) {
-        // Render friendly message instead of show_error
-        $data = [
-            'activity_id'    => $activity_id,
-            'student_number' => null,
-            'result'         => [
-                'ok'      => false,
-                'mode'    => 'err',
-                'message' => 'This check-in link is for student accounts only. You are currently logged in as: '.($rawLevel ?: 'Unknown').'.'
-            ],
-        ];
-        $this->output->set_status_header(200);
-        $this->load->view('activity_join_result', $data);
-        return;
-    }
+        if ($student_number === '') {
+            redirect(site_url('login') . '?next=' . urlencode($nextPath));
+            return;
+        }
 
-    // Resolve student number
-    $student_number =
-          (string)$this->session->userdata('username')
-       ?: (string)$this->session->userdata('student_number')
-       ?: (string)$this->session->userdata('studentnumber');
+        // Validate activity exists and is open — render message instead of show_error
+        $this->load->model('Activities_model', 'Activities');
+        $activity = $this->Activities->find($activity_id);
+        if (!$activity) {
+            $data = [
+                'activity_id'    => $activity_id,
+                'student_number' => $student_number,
+                'result'         => [
+                    'ok'      => false,
+                    'mode'    => 'err',
+                    'message' => 'This activity does not exist (it may have been deleted).',
+                ],
+            ];
+            $this->output->set_status_header(200);
+            $this->load->view('activity_join_result', $data);
+            return;
+        }
+        if (isset($activity->is_open) && (int)$activity->is_open !== 1) {
+            $data = [
+                'activity_id'    => $activity_id,
+                'student_number' => $student_number,
+                'result'         => [
+                    'ok'      => false,
+                    'mode'    => 'err',
+                    'message' => 'This activity is closed for check-ins.',
+                ],
+            ];
+            $this->output->set_status_header(200);
+            $this->load->view('activity_join_result', $data);
+            return;
+        }
 
-    if ($student_number === '') {
-        redirect(site_url('login') . '?next=' . urlencode($nextPath));
-        return;
-    }
+        // Proceed with check-in/out
+        $this->load->model('Student_qr_model', 'StudentQR');
+        $this->load->model('Activity_attendance_model', 'AttendanceModel');
 
-    // Validate activity exists and is open — render message instead of show_error
-    $this->load->model('Activities_model', 'Activities');
-    $activity = $this->Activities->find($activity_id);
-    if (!$activity) {
+        $qr  = $this->StudentQR->get_active($student_number);
+        if (!$qr || empty($qr->token)) {
+            $data = [
+                'activity_id'    => $activity_id,
+                'student_number' => $student_number,
+                'result'         => [
+                    'ok'      => false,
+                    'mode'    => 'err',
+                    'message' => 'No active QR found for your account. Please generate/activate your permanent QR first (My QR), then try again.',
+                ],
+            ];
+            $this->output->set_status_header(200);
+            $this->load->view('activity_join_result', $data);
+            return;
+        }
+
+        $res = $this->AttendanceModel->consume_token($activity_id, $qr->token, $direction);
+
         $data = [
             'activity_id'    => $activity_id,
             'student_number' => $student_number,
-            'result'         => [
-                'ok'      => false,
-                'mode'    => 'err',
-                'message' => 'This activity does not exist (it may have been deleted).',
-            ],
+            'result'         => $res,
         ];
         $this->output->set_status_header(200);
         $this->load->view('activity_join_result', $data);
-        return;
     }
-    if (isset($activity->is_open) && (int)$activity->is_open !== 1) {
-        $data = [
-            'activity_id'    => $activity_id,
-            'student_number' => $student_number,
-            'result'         => [
-                'ok'      => false,
-                'mode'    => 'err',
-                'message' => 'This activity is closed for check-ins.',
-            ],
-        ];
-        $this->output->set_status_header(200);
-        $this->load->view('activity_join_result', $data);
-        return;
-    }
-
-    // Proceed with check-in/out
-    $this->load->model('Student_qr_model', 'StudentQR');
-    $this->load->model('Activity_attendance_model', 'AttendanceModel');
-
-    $qr  = $this->StudentQR->get_active($student_number);
-    if (!$qr || empty($qr->token)) {
-        $data = [
-            'activity_id'    => $activity_id,
-            'student_number' => $student_number,
-            'result'         => [
-                'ok'      => false,
-                'mode'    => 'err',
-                'message' => 'No active QR found for your account. Please generate/activate your permanent QR first (My QR), then try again.',
-            ],
-        ];
-        $this->output->set_status_header(200);
-        $this->load->view('activity_join_result', $data);
-        return;
-    }
-
-    $res = $this->AttendanceModel->consume_token($activity_id, $qr->token, $direction);
-
-    $data = [
-        'activity_id'    => $activity_id,
-        'student_number' => $student_number,
-        'result'         => $res,
-    ];
-    $this->output->set_status_header(200);
-    $this->load->view('activity_join_result', $data);
-}
 
 
 
@@ -217,7 +250,7 @@ public function checkin($activity_id){
         $activity_id = (int)$activity_id;
         if ($activity_id <= 0) {
             return $this->output->set_content_type('application/json')
-                ->set_output(json_encode(['ok'=>false,'rows'=>[], 'message'=>'Invalid activity id']));
+                ->set_output(json_encode(['ok' => false, 'rows' => [], 'message' => 'Invalid activity id']));
         }
 
         $this->db->from('activity_attendance aa');
@@ -252,7 +285,7 @@ public function checkin($activity_id){
         $rows = $this->db->get()->result_array();
 
         foreach ($rows as &$r) {
-            $map = ['am'=>'Morning','pm'=>'Afternoon','eve'=>'Evening'];
+            $map = ['am' => 'Morning', 'pm' => 'Afternoon', 'eve' => 'Evening'];
             $r['session_label'] = $map[$r['session'] ?? ''] ?? '—';
             $r['student_name'] = trim((string)($r['student_name'] ?? ''));
             $r['full_name']    = $r['student_name'];
@@ -262,43 +295,56 @@ public function checkin($activity_id){
         }
 
         return $this->output->set_content_type('application/json')
-            ->set_output(json_encode(['ok'=>true,'rows'=>$rows]));
+            ->set_output(json_encode(['ok' => true, 'rows' => $rows]));
     }
 
-    public function my_logs(){
+    public function my_logs()
+    {
         $student_number = (string)$this->session->userdata('username')
-                          ?: (string)$this->session->userdata('student_number')
-                          ?: (string)$this->session->userdata('studentnumber');
+            ?: (string)$this->session->userdata('student_number')
+            ?: (string)$this->session->userdata('studentnumber');
         if (!$student_number) {
             return $this->output->set_status_header(401)->set_output('Unauthorized');
         }
         $rows = $this->Activity_attendance_model->list_student_attendance($student_number, 500, 0);
         return $this->output->set_content_type('application/json')
-            ->set_output(json_encode(['ok'=>true,'rows'=>$rows]));
+            ->set_output(json_encode(['ok' => true, 'rows' => $rows]));
     }
 
     public function profile()
-{
-    $sn = trim((string)$this->input->get('sn', TRUE));
-    if ($sn === '') {
-        return $this->output->set_content_type('application/json')
-            ->set_output(json_encode(['ok' => false, 'message' => 'Missing student number']));
-    }
+    {
+        $sn = trim((string)$this->input->get('sn', TRUE));
+        if ($sn === '') {
+            return $this->output->set_content_type('application/json')
+                ->set_output(json_encode(['ok' => false, 'message' => 'Missing student number']));
+        }
 
-    $sn_norm = preg_replace('/[\s-]+/', '', $sn);
+        $sn_norm = preg_replace('/[\s-]+/', '', $sn);
 
-    // 1) PRIMARY: studentsignup
-    $sp = null;
-    if ($this->db->table_exists('studentsignup')) {
-        $fields = array_flip($this->db->list_fields('studentsignup'));
-        $courseCols = ['Course1','Course2','Course3','Course'];
-        $majorCols  = ['Major1','Major2','Major3','Major'];
-        $courseCol = null; foreach ($courseCols as $c) { if (isset($fields[$c])) { $courseCol = $c; break; } }
-        $majorCol  = null; foreach ($majorCols  as $m) { if (isset($fields[$m])) { $majorCol  = $m; break; } }
-        $selCourse = $courseCol ? $courseCol : "''";
-        $selMajor  = $majorCol  ? $majorCol  : "''";
+        // 1) PRIMARY: studentsignup
+        $sp = null;
+        if ($this->db->table_exists('studentsignup')) {
+            $fields = array_flip($this->db->list_fields('studentsignup'));
+            $courseCols = ['Course1', 'Course2', 'Course3', 'Course'];
+            $majorCols  = ['Major1', 'Major2', 'Major3', 'Major'];
+            $courseCol = null;
+            foreach ($courseCols as $c) {
+                if (isset($fields[$c])) {
+                    $courseCol = $c;
+                    break;
+                }
+            }
+            $majorCol  = null;
+            foreach ($majorCols  as $m) {
+                if (isset($fields[$m])) {
+                    $majorCol  = $m;
+                    break;
+                }
+            }
+            $selCourse = $courseCol ? $courseCol : "''";
+            $selMajor  = $majorCol  ? $majorCol  : "''";
 
-        $sp = $this->db->select("
+            $sp = $this->db->select("
                 StudentNumber,
                 TRIM(FirstName)  AS FirstName,
                 TRIM(MiddleName) AS MiddleName,
@@ -310,14 +356,14 @@ public function checkin($activity_id){
                 {$selCourse} AS course,
                 {$selMajor}  AS major
             ", false)
-            ->from('studentsignup')
-            ->where("REPLACE(REPLACE(StudentNumber,'-',''),' ','') =", $sn_norm)
-            ->limit(1)->get()->row();
-    }
+                ->from('studentsignup')
+                ->where("REPLACE(REPLACE(StudentNumber,'-',''),' ','') =", $sn_norm)
+                ->limit(1)->get()->row();
+        }
 
-    // 2) FALLBACKS: studeprofile → o_users → users.username
-    if (!$sp && $this->db->table_exists('studeprofile')) {
-        $sp = $this->db->select("
+        // 2) FALLBACKS: studeprofile → o_users → users.username
+        if (!$sp && $this->db->table_exists('studeprofile')) {
+            $sp = $this->db->select("
                 sp.StudentNumber,
                 sp.FirstName, sp.MiddleName, sp.LastName,
                 CONCAT(
@@ -327,101 +373,101 @@ public function checkin($activity_id){
                 sp.Course AS course,
                 sp.Major  AS major
             ", false)
-            ->from('studeprofile sp')
-            ->where("REPLACE(REPLACE(sp.StudentNumber,'-',''),' ','') =", $sn_norm)
-            ->limit(1)->get()->row();
-    }
+                ->from('studeprofile sp')
+                ->where("REPLACE(REPLACE(sp.StudentNumber,'-',''),' ','') =", $sn_norm)
+                ->limit(1)->get()->row();
+        }
 
-    if (!$sp && $this->db->table_exists('o_users')) {
-        $sp = $this->db->select("
+        if (!$sp && $this->db->table_exists('o_users')) {
+            $sp = $this->db->select("
                 username AS StudentNumber,
                 fName AS FirstName, mName AS MiddleName, lName AS LastName,
                 CONCAT(lName, ', ', fName, IF(mName IS NULL OR mName='', '', CONCAT(' ', LEFT(mName,1), '.'))) AS student_name
             ", false)
-            ->from('o_users')
-            ->group_start()
-              ->where("REPLACE(REPLACE(username,'-',''),' ','') =", $sn_norm)
-              ->or_where("REPLACE(REPLACE(IDNumber,'-',''),' ','') =", $sn_norm)
-            ->group_end()
-            ->limit(1)->get()->row();
-    }
-
-    // LAST RESORT: users.username (no name columns there)
-    if (!$sp && $this->db->table_exists('users')) {
-        $uu = $this->db->select('username')->from('users')
-              ->where("REPLACE(REPLACE(username,'-',''),' ','') =", $sn_norm)
-              ->limit(1)->get()->row();
-        if ($uu) {
-            $sp = (object)[
-                'StudentNumber' => $uu->username,
-                'student_name'  => $uu->username, // show username as name
-                'course'        => null,
-                'major'         => null,
-            ];
+                ->from('o_users')
+                ->group_start()
+                ->where("REPLACE(REPLACE(username,'-',''),' ','') =", $sn_norm)
+                ->or_where("REPLACE(REPLACE(IDNumber,'-',''),' ','') =", $sn_norm)
+                ->group_end()
+                ->limit(1)->get()->row();
         }
-    }
 
-    // Avatar (users/o_users)
-    $photo_url = null;
-    if ($this->db->table_exists('users')) {
-        $row = $this->db->select('avatar')->from('users')
-               ->where("REPLACE(REPLACE(username,'-',''),' ','') =", $sn_norm)->get()->row();
-        if ($row && !empty($row->avatar)) $photo_url = base_url('upload/profile/'.$row->avatar);
-    }
-    if (!$photo_url && $this->db->table_exists('o_users')) {
-        $row = $this->db->select('avatar')->from('o_users')
-               ->group_start()
-                 ->where("REPLACE(REPLACE(username,'-',''),' ','') =", $sn_norm)
-                 ->or_where("REPLACE(REPLACE(IDNumber,'-',''),' ','') =", $sn_norm)
-               ->group_end()
-               ->get()->row();
-        if ($row && !empty($row->avatar)) $photo_url = base_url('upload/profile/'.$row->avatar);
-    }
+        // LAST RESORT: users.username (no name columns there)
+        if (!$sp && $this->db->table_exists('users')) {
+            $uu = $this->db->select('username')->from('users')
+                ->where("REPLACE(REPLACE(username,'-',''),' ','') =", $sn_norm)
+                ->limit(1)->get()->row();
+            if ($uu) {
+                $sp = (object)[
+                    'StudentNumber' => $uu->username,
+                    'student_name'  => $uu->username, // show username as name
+                    'course'        => null,
+                    'major'         => null,
+                ];
+            }
+        }
 
-    // Response (fallback name to SN instead of null)
-    if (!$sp) {
+        // Avatar (users/o_users)
+        $photo_url = null;
+        if ($this->db->table_exists('users')) {
+            $row = $this->db->select('avatar')->from('users')
+                ->where("REPLACE(REPLACE(username,'-',''),' ','') =", $sn_norm)->get()->row();
+            if ($row && !empty($row->avatar)) $photo_url = base_url('upload/profile/' . $row->avatar);
+        }
+        if (!$photo_url && $this->db->table_exists('o_users')) {
+            $row = $this->db->select('avatar')->from('o_users')
+                ->group_start()
+                ->where("REPLACE(REPLACE(username,'-',''),' ','') =", $sn_norm)
+                ->or_where("REPLACE(REPLACE(IDNumber,'-',''),' ','') =", $sn_norm)
+                ->group_end()
+                ->get()->row();
+            if ($row && !empty($row->avatar)) $photo_url = base_url('upload/profile/' . $row->avatar);
+        }
+
+        // Response (fallback name to SN instead of null)
+        if (!$sp) {
+            return $this->output->set_content_type('application/json')
+                ->set_output(json_encode([
+                    'ok' => true,
+                    'student_number' => $sn,
+                    'student_name'   => $sn,   // nicer than “Unknown Student”
+                    'course'         => null,
+                    'major'          => null,
+                    'photo_url'      => $photo_url
+                ]));
+        }
+
         return $this->output->set_content_type('application/json')
             ->set_output(json_encode([
                 'ok' => true,
-                'student_number' => $sn,
-                'student_name'   => $sn,   // nicer than “Unknown Student”
-                'course'         => null,
-                'major'          => null,
+                'student_number' => $sp->StudentNumber ?: $sn,
+                'student_name'   => $sp->student_name ?: $sn,
+                'course'         => isset($sp->course) ? $sp->course : null,
+                'major'          => isset($sp->major)  ? $sp->major  : null,
                 'photo_url'      => $photo_url
             ]));
     }
 
-    return $this->output->set_content_type('application/json')
-        ->set_output(json_encode([
-            'ok' => true,
-            'student_number' => $sp->StudentNumber ?: $sn,
-            'student_name'   => $sp->student_name ?: $sn,
-            'course'         => isset($sp->course) ? $sp->course : null,
-            'major'          => isset($sp->major)  ? $sp->major  : null,
-            'photo_url'      => $photo_url
-        ]));
-}
+    private function lookup_avatar($studentNumber)
+    {
+        $row = $this->db->select('avatar')->from('users')
+            ->where('username', $studentNumber)->limit(1)->get()->row();
+        if ($row && !empty($row->avatar)) {
+            return base_url('upload/profile/' . $row->avatar);
+        }
 
-private function lookup_avatar($studentNumber)
-{
-    $row = $this->db->select('avatar')->from('users')
-        ->where('username', $studentNumber)->limit(1)->get()->row();
-    if ($row && !empty($row->avatar)) {
-        return base_url('upload/profile/'.$row->avatar);
-    }
+        $row = $this->db->select('avatar')->from('o_users')
+            ->where('username', $studentNumber)->limit(1)->get()->row();
+        if ($row && !empty($row->avatar)) {
+            return base_url('upload/profile/' . $row->avatar);
+        }
 
-    $row = $this->db->select('avatar')->from('o_users')
-        ->where('username', $studentNumber)->limit(1)->get()->row();
-    if ($row && !empty($row->avatar)) {
-        return base_url('upload/profile/'.$row->avatar);
+        // NEW: the column your DB actually uses for the SN
+        $row = $this->db->select('avatar')->from('o_users')
+            ->where('IDNumber', $studentNumber)->limit(1)->get()->row();
+        if ($row && !empty($row->avatar)) {
+            return base_url('upload/profile/' . $row->avatar);
+        }
+        return null;
     }
-
-    // NEW: the column your DB actually uses for the SN
-    $row = $this->db->select('avatar')->from('o_users')
-        ->where('IDNumber', $studentNumber)->limit(1)->get()->row();
-    if ($row && !empty($row->avatar)) {
-        return base_url('upload/profile/'.$row->avatar);
-    }
-    return null;
-}
 }

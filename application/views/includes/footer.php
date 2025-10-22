@@ -29,8 +29,8 @@
         z-index: 20000;
     }
 
-    .modal-backdrop {
-        z-index: 19990;
+    #fbmsoVisionMissionModal.modal {
+        z-index: 20000;
     }
 
     #fbmsoVisionMissionModal .modal-header {

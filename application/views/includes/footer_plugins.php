@@ -47,17 +47,17 @@
   window.APP = window.APP || {};
   APP.baseUrl = '<?= base_url(); ?>';
   APP.req = {
-    count:    '<?= base_url('request/ajax_pending_count'); ?>',
-    list:     '<?= base_url('request/ajax_pending_list'); ?>',
+    count: '<?= base_url('request/ajax_pending_count'); ?>',
+    list: '<?= base_url('request/ajax_pending_list'); ?>',
     markSeen: '<?= base_url('request/ajax_mark_seen'); ?>',
-    index:    '<?= base_url('request'); ?>'
+    index: '<?= base_url('request'); ?>'
   };
 </script>
 
 
 <!-- ✅ Bootstrap Dropdown Activation -->
 <script>
-  $(document).ready(function () {
+  $(document).ready(function() {
     $('.dropdown-toggle').dropdown(); // Make sure dropdowns work
   });
 </script>

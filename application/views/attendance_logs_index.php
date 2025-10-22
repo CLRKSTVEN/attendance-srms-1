@@ -301,6 +301,8 @@ $flashMsg      = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
                                                             <th>Course</th>
                                                             <th>Year</th>
                                                             <th>Checked-In By</th>
+                                                            <th>Remarks</th>
+
                                                         </tr>
                                                     </thead>
                                                     <tbody>
@@ -320,6 +322,9 @@ $flashMsg      = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
                                                                 $courseDisplay = strtoupper($courseRaw);
                                                             }
                                                             $sessionCode   = strtoupper(trim((string)($r->session ?? '')));
+                                                            $remarkRaw = trim((string)($r->remarks ?? ''));
+                                                            $srcLower  = strtolower((string)($r->source ?? ''));
+                                                            $remarkOut = $remarkRaw !== '' ? $remarkRaw : ($srcLower === 'qr' ? 'Scanned via QR' : '—');
                                                         ?>
                                                             <tr>
                                                                 <td class="student-number-cell">
@@ -344,7 +349,9 @@ $flashMsg      = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
                                                                 </td>
                                                                 <td><?= h($r->YearLevel) ?></td>
                                                                 <td><?= h($r->checked_in_by) ?></td>
+                                                                <td><?= h($remarkOut) ?></td> <!-- NEW -->
                                                             </tr>
+
                                                         <?php endforeach; ?>
                                                     </tbody>
                                                 </table>
@@ -536,6 +543,7 @@ $flashMsg      = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
                         [2, 'asc'],
                         [1, 'asc']
                     ]
+
                 });
             }
 
