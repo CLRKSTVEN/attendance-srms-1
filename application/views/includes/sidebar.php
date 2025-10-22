@@ -31,8 +31,6 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                 <ul class="metismenu" id="side-menu">
 
                     <li class="menu-title">ADMINISTRATION</li>
-
-                    <!-- Dashboard (keep visible) -->
                     <li>
                         <a href="<?= base_url(); ?>Page/admin" class="waves-effect">
                             <i class="bi bi-speedometer2"></i>
@@ -41,17 +39,11 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                     </li>
 
                     <li>
-
-
-                        <!-- student profile  -->
                         <a href="<?= base_url('Page/profileList'); ?>">
                             <i class="bi bi-person-fill"></i>
                             <span> Registered Students </span>
                         </a>
                     </li>
-
-
-
                     <li>
                         <a href="<?= base_url('AttendanceLogs'); ?>" class="waves-effect">
                             <i class="bi bi-clipboard-check"></i>

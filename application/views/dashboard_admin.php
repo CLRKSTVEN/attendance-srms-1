@@ -4,12 +4,10 @@
 <?php include('includes/head.php'); ?>
 
 <style>
-  /* --- Base resets / utilities --- */
   a.text-decoration-none:hover {
     text-decoration: none;
   }
 
-  /* --- KPI (unified look across widgets) --- */
   .kpi {
     border: 0;
     border-radius: 14px;
@@ -54,7 +52,6 @@
     font-size: 28px
   }
 
-  /* color accents per kpi */
   .kpi.blue .icon {
     background: rgba(37, 99, 235, .08);
     color: #2563eb
@@ -80,7 +77,6 @@
     color: #3b82f6
   }
 
-  /* --- Announcement cards (kept & refined) --- */
   .card.announcement-card {
     transition: transform .3s ease, box-shadow .3s ease, border .3s ease;
     border: 1px solid #dee2e6;
@@ -216,19 +212,15 @@
     gap: 16px;
   }
 
-  /* ===== Fix: long school name/address on mobile (no trimming) ===== */
   .page-title-box .page-title {
     white-space: normal !important;
-    /* kill theme's nowrap */
     overflow: visible !important;
-    /* kill ellipsis clipping */
     text-overflow: clip !important;
     word-break: break-word;
     hyphens: auto;
     line-height: 1.25;
   }
 
-  /* If the breadcrumb area was forcing a single line, stack it under the title on phones */
   @media (max-width: 767.98px) {
     .page-title-box {
       display: block;
@@ -245,27 +237,22 @@
     }
   }
 
-  /* ===== KPI grid: 2 columns on phones, nicer sizing ===== */
   .kpi-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    /* desktop/tablet default */
     gap: 16px;
   }
 
   @media (max-width: 767.98px) {
     .kpi-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
-      /* always 2-up on phones */
       gap: 12px;
     }
 
-    /* Move the first card (Students' Profile) to LAST on phones */
     .kpi-grid>a:nth-child(1) {
       order: 5;
     }
 
-    /* Tighter card visuals for small screens */
     .kpi .card-body {
       padding: .9rem;
     }
@@ -282,14 +269,12 @@
     }
   }
 
-  /* Optional: small tablets (e.g., 768–899px) can still do 2 columns if you want */
   @media (min-width: 768px) and (max-width: 899.98px) {
     .kpi-grid {
       grid-template-columns: repeat(2, minmax(0, 1fr));
     }
   }
 
-  /* ===== Enrollment Summary card styles (to mirror announcement look) ===== */
   .card.enroll-card {
     border: 1px solid #dee2e6;
   }
@@ -313,7 +298,6 @@
     background: #f8f9fc;
   }
 
-  /* responsive stack for the two summary tables */
   .enroll-split {
     display: flex;
     gap: 24px;
@@ -332,13 +316,10 @@
     }
   }
 
-  /* Make selected KPI span both columns on phones */
   @media (max-width: 767.98px) {
     .kpi-grid>a.kpi-span-2 {
       grid-column: 1 / -1;
-      /* occupy both columns */
       order: 99;
-      /* keep it at the bottom */
     }
   }
 </style>
@@ -353,7 +334,6 @@
       <div class="content">
         <div class="container-fluid">
 
-          <!-- Title -->
           <div class="row">
             <div class="col-12">
               <div class="page-title-box">
@@ -377,10 +357,8 @@
               </div>
             </div>
           </div>
-          <!-- /Title -->
 
           <?php
-          // Safely extract single-row aggregates to avoid using $row after foreach.
           $SP_count = (int)($data7[0]->StudeCount ?? 0);
 
           $yl1 = $data[0]  ?? null;
@@ -401,11 +379,7 @@
           $sy   = $this->session->userdata('sy');
           $sem  = $this->session->userdata('semester');
           ?>
-
-          <!-- KPI Row: Students' Profile + Year Levels (grid version) -->
           <div class="kpi-grid">
-
-            <!-- Registered Students KPI -->
             <a href="<?= base_url(); ?>Page/profileList" class="text-decoration-none kpi-span-2">
               <div class="card kpi blue">
                 <div class="card-body">
@@ -419,9 +393,6 @@
                 </div>
               </div>
             </a>
-
-
-            <!-- 1st Year -->
             <a href="<?= base_url(); ?>Masterlist/byGradeYL?sy=<?= urlencode($sy) ?>&sem=<?= urlencode($sem) ?>&yearlevel=<?= urlencode($yl1Level) ?>" class="text-decoration-none">
               <div class="card kpi pink">
                 <div class="card-body">
@@ -433,8 +404,6 @@
                 </div>
               </div>
             </a>
-
-            <!-- 2nd Year -->
             <a href="<?= base_url(); ?>Masterlist/byGradeYL?sy=<?= urlencode($sy) ?>&sem=<?= urlencode($sem) ?>&yearlevel=<?= urlencode($yl2Level) ?>" class="text-decoration-none">
               <div class="card kpi purple">
                 <div class="card-body">
@@ -446,8 +415,6 @@
                 </div>
               </div>
             </a>
-
-            <!-- 3rd Year -->
             <a href="<?= base_url(); ?>Masterlist/byGradeYL?sy=<?= urlencode($sy) ?>&sem=<?= urlencode($sem) ?>&yearlevel=<?= urlencode($yl3Level) ?>" class="text-decoration-none">
               <div class="card kpi cyan">
                 <div class="card-body">
@@ -459,8 +426,6 @@
                 </div>
               </div>
             </a>
-
-            <!-- 4th Year -->
             <a href="<?= base_url(); ?>Masterlist/byGradeYL?sy=<?= urlencode($sy) ?>&sem=<?= urlencode($sem) ?>&yearlevel=<?= urlencode($yl4Level) ?>" class="text-decoration-none">
               <div class="card kpi primary">
                 <div class="card-body">
@@ -472,13 +437,7 @@
                 </div>
               </div>
             </a>
-
           </div>
-          <!-- /KPI Row -->
-
-
-
-          <!-- Enrollment Summary (as a card, styled like Announcements) -->
           <div class="row mt-4">
             <div class="col-xl-12">
               <div class="card enroll-card">
@@ -496,12 +455,9 @@
                     </a>
                   </div>
                 </div>
-
                 <div id="enrollSummary" class="collapse show">
                   <div class="card-body">
                     <div class="enroll-split">
-
-                      <!-- By Course -->
                       <div class="enroll-col">
                         <h6 class="mb-3 text-uppercase text-muted">By Course</h6>
                         <div class="table-responsive">
@@ -569,8 +525,6 @@
                           </table>
                         </div>
                       </div> -->
-
-                      <!-- By Year Level -->
                       <div class="enroll-col">
                         <h6 class="mb-3 text-uppercase text-muted">By Year Level</h6>
                         <div class="table-responsive">
@@ -602,11 +556,8 @@
                           </table>
                         </div>
                       </div>
-                      <!-- By Section -->
                       <div class="enroll-col">
                         <h6 class="mb-3 text-uppercase text-muted">By Section</h6>
-
-                        <!-- Optional: show active scope if you passed ?course=&major= -->
                         <?php if (!empty($this->input->get('course')) || !empty($this->input->get('major'))): ?>
                           <div class="mb-2">
                             <?php if ($this->input->get('course')): ?>
@@ -617,7 +568,6 @@
                             <?php endif; ?>
                           </div>
                         <?php endif; ?>
-
                         <div class="table-responsive">
                           <table class="table table-sm mb-0">
                             <thead>
@@ -771,18 +721,15 @@
               </div>
             </div>
           </div>
-          <!-- /Enrollment Summary card -->
 
-        </div> <!-- /container-fluid -->
-      </div> <!-- /content -->
+        </div>
+      </div>
 
       <?php include('includes/footer.php'); ?>
     </div>
   </div>
 
   <?php include('includes/themecustomizer.php'); ?>
-
-  <!-- Vendor js -->
   <script src="<?= base_url(); ?>assets/js/vendor.min.js"></script>
   <script src="<?= base_url(); ?>assets/libs/moment/moment.min.js"></script>
   <script src="<?= base_url(); ?>assets/libs/jquery-scrollto/jquery.scrollTo.min.js"></script>
@@ -797,8 +744,6 @@
   <script src="<?= base_url(); ?>assets/js/pages/dashboard.init.js"></script>
   <script src="<?= base_url(); ?>assets/js/app.min.js"></script>
   <script src="<?= base_url(); ?>assets/libs/jquery-ui/jquery-ui.min.js"></script>
-
-  <!-- Datatables (kept if used elsewhere) -->
   <script src="<?= base_url(); ?>assets/libs/datatables/jquery.dataTables.min.js"></script>
   <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.bootstrap4.min.js"></script>
   <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.buttons.min.js"></script>
@@ -813,8 +758,6 @@
   <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.keyTable.min.js"></script>
   <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.select.min.js"></script>
   <script src="<?= base_url(); ?>assets/js/pages/datatables.init.js"></script>
-
-  <!-- Announcement modal handler (kept) -->
   <script>
     $('#viewAnnouncementModal').on('show.bs.modal', function(e) {
       var t = $(e.relatedTarget);
