@@ -49,11 +49,9 @@
             <div class="col d-flex align-items-center">
               <input id="remarkInline"
                 class="form-control form-control-sm"
-                placeholder="Remarks (optional)"
+                placeholder="Remarks ( Leave blank → saved as Scanned via QR )"
                 style="min-width:280px; max-width:520px;">
-              <small class="text-muted ml-2">
-                Leave blank → saved as <b>“Scanned via QR”</b>.
-              </small>
+
             </div>
           </div>
 
