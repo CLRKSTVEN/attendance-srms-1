@@ -1096,11 +1096,13 @@ class Page extends CI_Controller
 		$this->load->view('student_grades');
 	}
 
-	function bdayToday()
+	public function bdayToday()
 	{
-		$sy = $this->session->userdata('sy');
-		$sem = $this->session->userdata('semester');
-		$result['data'] = $this->StudentModel->birthdayCelebs($sem, $sy);
+		date_default_timezone_set('Asia/Manila');
+
+		$this->load->model('SignupModel'); // <— new model below
+		$result['students'] = $this->SignupModel->birthdays_today();
+
 		$this->load->view('bday_today', $result);
 	}
 
@@ -1113,12 +1115,14 @@ class Page extends CI_Controller
 		$result['data'] = $this->StudentModel->sexList($sem, $sy, $sex);
 		$this->load->view('masterlist_by_sex', $result);
 	}
-	function bdayMonth()
+	public function bdayMonth()
 	{
-		$sy = $this->session->userdata('sy');
-		$sem = $this->session->userdata('semester');
-		$result['data'] = $this->StudentModel->birthdayMonths($sem, $sy);
-		$this->load->view('bday_months', $result);
+		date_default_timezone_set('Asia/Manila');
+
+		$this->load->model('SignupModel');
+		$result['students'] = $this->SignupModel->birthdays_this_month();
+
+		$this->load->view('bday_month', $result);
 	}
 	//online enrollment
 	function enrollment()
