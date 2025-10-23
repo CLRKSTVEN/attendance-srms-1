@@ -161,9 +161,15 @@
                     <tbody>
                       <?php
                       foreach ($data as $row) {
+                        // Hide Student accounts entirely
+                        if (strcasecmp($row->position, 'Student') === 0) {
+                          continue;
+                        }
+
                         echo "<tr>";
                         echo "<td>" . $row->fName . ', ' . $row->mName . ' ' . $row->lName . "</td>";
                       ?>
+
                         <td><?php echo $row->username; ?></td>
                         <td><?php echo $row->position; ?></td>
                         <td><?php echo $row->email; ?></td>
