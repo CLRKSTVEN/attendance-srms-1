@@ -875,10 +875,14 @@
             }
 
             showLastRecorded(studentPayload || (j.student_number || payload.token), outcome);
-            clearRemarks();
+            // NOTE: clearRemarks() removed so remarks persist after each scan.
+
             if (pauseOnHit) {
-              showProfileCard(studentPayload || (j.student_number || payload.token), outcome,
-                j.message || (j.session ? `Session: ${j.session}` : ''));
+              showProfileCard(
+                studentPayload || (j.student_number || payload.token),
+                outcome,
+                j.message || (j.session ? `Session: ${j.session}` : '')
+              );
             } else {
               const msg = outcome === 'in' ? 'IN recorded' :
                 outcome === 'out' ? 'OUT recorded' :
@@ -1075,12 +1079,14 @@
             if (isMobile) {
               const z = Math.min(Math.max(MOBILE_DEFAULT_ZOOM, caps.zoom.min), caps.zoom.max);
               track.applyConstraints({
-                advanced: [{
-                  zoom: z
-                }]
-              }).then(() => {
-                input.value = z;
-              }).catch(() => {});
+                  advanced: [{
+                    zoom: z
+                  }]
+                })
+                .then(() => {
+                  input.value = z;
+                })
+                .catch(() => {});
             }
           }
         }

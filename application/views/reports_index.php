@@ -9,17 +9,13 @@
 
         <div class="content-page">
             <div class="content">
-                <div class="container-fluid section-gutters"><!-- subtle edge padding -->
-
-                    <!-- Page header -->
+                <div class="container-fluid section-gutters">
                     <div class="row">
                         <div class="col-12">
                             <div class="page-title-box d-flex align-items-center justify-content-between mb-2">
                                 <div>
                                     <h4 class="page-title mb-1">Reports & Insights</h4>
                                 </div>
-
-                                <!-- Print -->
                                 <div class="btn-group no-print">
                                     <button type="button" id="printBtn" class="btn btn-primary btn-sm">
                                         <i class="mdi mdi-printer"></i> Print
@@ -29,8 +25,6 @@
                             <hr style="border:0;height:2px;background:linear-gradient(to right,#4285F4 60%,#FBBC05 80%,#34A853 100%);border-radius:1px;margin:10px 0 16px" />
                         </div>
                     </div>
-
-                    <!-- KPIs -->
                     <div class="row" id="section-kpis" data-print-id="kpis">
                         <div class="col-md-3 mb-3">
                             <div class="card kpi p-3">
@@ -55,7 +49,7 @@
                                             echo $totalSections; ?>
                                         </div>
                                     </div>
-                                    <div class="icon bg-soft-success"><i class="mdi mdi-view-grid-outline"></i></div>
+                                    <div class="icon bg-soft-primary"><i class="mdi mdi-door-open"></i></div>
                                 </div>
                             </div>
                         </div>
@@ -91,11 +85,7 @@
                             </div>
                         </div>
                     </div>
-
-                    <!-- Accordion -->
                     <div id="reportsAccordion" class="accordion">
-
-                        <!-- 1) Students by Year Level -->
                         <div class="card mb-3 section-card" id="section-yearlevel" data-print-id="by_yearlevel">
                             <div class="card-header py-2 px-3" id="headYearLevel">
                                 <h6 class="mb-0">
@@ -126,8 +116,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 2) Students by Course -->
                         <div class="card mb-3 section-card" id="section-course" data-print-id="by_course">
                             <div class="card-header py-2 px-3" id="headCourse">
                                 <h6 class="mb-0">
@@ -158,8 +146,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 3) Sections per Course -->
                         <div class="card mb-3 section-card" id="section-sections" data-print-id="sections_per_course">
                             <div class="card-header py-2 px-3" id="headSectionsCount">
                                 <h6 class="mb-0">
@@ -190,8 +176,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 4) Students by Section -->
                         <div class="card mb-3 section-card" id="section-bysection" data-print-id="by_section">
                             <div class="card-header py-2 px-3 d-flex align-items-center justify-content-between" id="headBySection">
                                 <h6 class="mb-0">
@@ -228,8 +212,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 5) Events summary -->
                         <div class="card mb-3 section-card" id="section-events" data-print-id="events">
                             <div class="card-header py-2 px-3" id="headEvents">
                                 <h6 class="mb-0">
@@ -293,8 +275,6 @@
                                 </div>
                             </div>
                         </div>
-
-                        <!-- 6) Recent Attendance (with names) -->
                         <div class="card mb-3 section-card" id="section-attendance" data-print-id="attendance">
                             <div class="card-header py-2 px-3" id="headAttendance">
                                 <h6 class="mb-0">
@@ -356,17 +336,16 @@
                             </div>
                         </div>
 
-                    </div><!-- /#reportsAccordion -->
+                    </div>
 
-                </div><!-- /.container-fluid -->
-            </div><!-- /.content -->
+                </div>
+            </div>
             <?php include('includes/footer.php'); ?>
-        </div><!-- /.content-page -->
-    </div><!-- /#wrapper -->
+        </div>
+    </div>
 
     <?php include('includes/footer_plugins.php'); ?>
 
-    <!-- Print Picker Modal -->
     <div class="modal fade no-print" id="printPicker" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
             <div class="modal-content">
@@ -418,14 +397,12 @@
 
     <script>
         $(function() {
-            // Reliable toggles for sections (click title). Still collapsible per section.
             $(document).on('click', '.section-toggle', function(e) {
                 e.preventDefault();
                 var target = $(this).attr('data-target');
                 if (target) $(target).collapse('toggle');
             });
 
-            // Chevron icons sync
             $('#reportsAccordion .collapse')
                 .on('shown.bs.collapse', function() {
                     $(this).prev('.card-header').find('.mdi')
@@ -436,7 +413,6 @@
                         .removeClass('mdi-chevron-down').addClass('mdi-chevron-right');
                 });
 
-            // Lazy init DataTable for By Section (no search/filter/paging)
             var bySectionInit = false;
             $('#collapseBySection').on('shown.bs.collapse', function() {
                 if (!bySectionInit) {
@@ -456,55 +432,38 @@
                 }
             });
 
-            // Print flow
             $('#printBtn').on('click', function() {
-                // Default: All checked; reveal modal
                 $('#optAll').prop('checked', true).trigger('change');
                 $('#printPicker').modal('show');
             });
-
-            // Toggle all
             $('#optAll').on('change', function() {
                 var checked = $(this).is(':checked');
                 $('.print-opt-item').prop('checked', checked);
             });
-
-            // If user toggles any item, uncheck "All" automatically
             $('.print-opt-item').on('change', function() {
                 var allOn = $('.print-opt-item').length === $('.print-opt-item:checked').length;
                 $('#optAll').prop('checked', allOn);
             });
-
-            // Confirm print
             $('#confirmPrint').on('click', function() {
                 $('#printPicker').modal('hide');
-
-                // Hide/show by adding classes
                 var selected = $('.print-opt-item:checked').map(function() {
                     return $(this).data('target');
                 }).get();
                 var all = $('[data-print-id]').map(function() {
                     return $(this).data('print-id');
                 }).get();
-
-                // Hide all first
                 all.forEach(function(id) {
                     $('[data-print-id="' + id + '"]').addClass('print-hide');
                 });
-                // Show selected
                 selected.forEach(function(id) {
                     $('[data-print-id="' + id + '"]').removeClass('print-hide');
                 });
-
-                // Expand all selected collapses for printing
                 selected.forEach(function(id) {
                     var card = $('[data-print-id="' + id + '"]');
                     card.find('.collapse').collapse('show');
                 });
 
                 window.print();
-
-                // Revert after print
                 setTimeout(function() {
                     $('[data-print-id]').removeClass('print-hide');
                 }, 500);
@@ -513,7 +472,6 @@
     </script>
 
     <style>
-        /* Edge padding so tables/titles aren't on page edge */
         .section-gutters {
             padding-left: .5rem;
             padding-right: .5rem;
@@ -533,7 +491,6 @@
             }
         }
 
-        /* Card inner padding */
         .section-card .card-body {
             padding-left: .25rem;
             padding-right: .25rem;
@@ -546,7 +503,6 @@
             }
         }
 
-        /* KPI visuals */
         .kpi {
             border: 0;
             border-radius: 14px;
@@ -600,7 +556,6 @@
             color: #0ea5e9
         }
 
-        /* Count pills */
         .count-badge {
             display: inline-block;
             min-width: 36px;
@@ -640,7 +595,6 @@
             color: #155e75;
         }
 
-        /* Section headers + tables */
         .section-toggle {
             font-weight: 600;
         }
@@ -679,7 +633,6 @@
             vertical-align: middle;
         }
 
-        /* Print helpers */
         .print-hide {
             display: none !important;
         }
@@ -735,7 +688,6 @@
             }
         }
 
-        /* Utils */
         .lh-1 {
             line-height: 1;
         }

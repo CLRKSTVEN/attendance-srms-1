@@ -19,7 +19,7 @@ class Page extends CI_Controller
 		$this->load->vars(['online_settings' => $this->OnlineSettingsModel->get_setting()]);
 		$this->load->model('StudentModel');
 		$this->load->model('CourseSectionModel');
-
+		$this->load->model('AuditLogModel');
 		if ($this->session->userdata('logged_in') !== TRUE) {
 			redirect('login');
 		}
@@ -2679,6 +2679,8 @@ class Page extends CI_Controller
 		$result['data'] = $this->StudentModel->signUpList();
 		$this->load->view('student_signup_update', $result);
 	}
+
+
 	public function deleteSignup()
 	{
 		// Require login
@@ -2697,10 +2699,25 @@ class Page extends CI_Controller
 		)));
 		$allowed = ['head registrar', 'registrar', 'assistant registrar', 'admin', 'administrator'];
 		if (!in_array($role, $allowed, true)) {
+
+			// AUDIT: unauthorized delete attempt
+			$this->AuditLogModel->write(
+				'delete',
+				'Signup',
+				'studentsignup',
+				(string)$this->input->post('id', true) ?: null, // may be empty
+				null,
+				null,
+				0,
+				'Unauthorized attempt to delete signup',
+				['by_role' => $role]
+			);
+
 			$this->session->set_flashdata('danger', 'Unauthorized: Registrar/Admin role required.');
 			redirect($this->input->server('HTTP_REFERER') ?: 'Page/profileList');
 			return;
 		}
+
 
 		// Inputs (POST)
 		$studno       = trim((string)$this->input->post('id', true));   // StudentNumber
@@ -2753,10 +2770,53 @@ class Page extends CI_Controller
 		// if (is_file($qrPng)) { @unlink($qrPng); }
 
 		$this->db->trans_complete();
+		$ok = $this->db->trans_status();
 
-		if (!$this->db->trans_status()) {
+		if (!$ok) {
+			// AUDIT: delete failed
+			$this->AuditLogModel->write(
+				'delete',
+				'Signup',
+				'studentsignup',
+				$studno,
+				null,
+				null,
+				0,
+				'Failed to delete signup record',
+				[
+					'email'                 => $email,
+					'aff_semesterstude'     => $aff_semesterstude,
+					'aff_studentsignup'     => $aff_studentsignup,
+					'aff_studeprofile'      => $aff_studeprofile,
+					'aff_users_by_username' => $aff_users_by_username,
+					'aff_users_by_email'    => $aff_users_by_email,
+					'aff_student_qr'        => $aff_student_qr
+				]
+			);
+
 			$this->session->set_flashdata('danger', 'Delete failed. Please try again or check logs.');
 		} else {
+			// AUDIT: delete success
+			$this->AuditLogModel->write(
+				'delete',
+				'Signup',
+				'studentsignup',
+				$studno,
+				null,
+				null,
+				1,
+				'Deleted signup record',
+				[
+					'email'                 => $email,
+					'aff_semesterstude'     => $aff_semesterstude,
+					'aff_studentsignup'     => $aff_studentsignup,
+					'aff_studeprofile'      => $aff_studeprofile,
+					'aff_users_by_username' => $aff_users_by_username,
+					'aff_users_by_email'    => $aff_users_by_email,
+					'aff_student_qr'        => $aff_student_qr
+				]
+			);
+
 			$msg = sprintf(
 				'Deleted %s — semesterstude:%d, studentsignup:%d, studeprofile:%d, o_users(user:%d,email:%d), student_qr:%d',
 				htmlspecialchars($studno, ENT_QUOTES, 'UTF-8'),
@@ -2769,6 +2829,7 @@ class Page extends CI_Controller
 			);
 			$this->session->set_flashdata('success', $msg);
 		}
+
 
 		// Redirect back
 		if ($return_level) {
@@ -4324,60 +4385,108 @@ class Page extends CI_Controller
 
 		return redirect('Announcement'); // back to list
 	}
-
 	public function userAccounts()
 	{
-		// Load the user accounts data and pass it to the view
-		$result['data'] = $this->StudentModel->userAccounts();
-		$this->load->view('user_accounts', $result);
-
-		// Check if the form has been submitted
+		// 1) Handle "Add New User" POST FIRST (modal posts here)
 		if ($this->input->post('submit')) {
-			// Sanitize and retrieve data from the form
-			$username = $this->input->post('username', TRUE); // TRUE for XSS filtering
-			$IDNumber = $this->input->post('IDNumber', TRUE);
-			$password = sha1($this->input->post('password')); // Consider using a more secure hashing method
-			$acctLevel = $this->input->post('acctLevel', TRUE);
-			$fName = $this->input->post('fName', TRUE);
-			$mName = $this->input->post('mName', TRUE);
-			$lName = $this->input->post('lName', TRUE);
-			$completeName = $fName . ' ' . $lName;
-			$email = $this->input->post('email', TRUE);
-			$dateCreated = date("Y-m-d");
+			// DO NOT log raw password anywhere
+			$username  = trim((string)$this->input->post('username', true)); // XSS filter ok for username
+			$IDNumber  = trim((string)$this->input->post('IDNumber', true));
+			$rawPass   = (string)$this->input->post('password');             // raw, don't log
+			$password  = sha1($rawPass); // consider stronger hashing but keeping your code
+			$acctLevel = trim((string)$this->input->post('acctLevel', true));
+			$fName     = trim((string)$this->input->post('fName', true));
+			$mName     = trim((string)$this->input->post('mName', true));
+			$lName     = trim((string)$this->input->post('lName', true));
+			$email     = trim((string)$this->input->post('email', true));
+			$dateCreated = date('Y-m-d');
 
-			// Use query builder to check if the username already exists
-			$this->db->where('username', $username);
-			$query = $this->db->get('o_users');
+			// required-field guard (optional)
+			if ($username === '' || $rawPass === '' || $acctLevel === '' || $fName === '' || $lName === '' || $email === '' || $IDNumber === '') {
+				$this->AuditLogModel->write(
+					'create',
+					'User Accounts',
+					'o_users',
+					null,
+					null,
+					['username' => $username, 'position' => $acctLevel, 'email' => $email, 'IDNumber' => $IDNumber, 'name' => $fName . ' ' . $lName],
+					0,
+					'Failed to create user (missing required fields)'
+				);
+				$this->session->set_flashdata('danger', '<div class="alert alert-danger text-center"><b>Missing required fields.</b></div>');
+				return redirect('Page/userAccounts');
+			}
 
-			if ($query->num_rows() > 0) {
-				// Set flash message and redirect if username exists
+			// Duplicate username?
+			$exists = $this->db->where('username', $username)->get('o_users')->num_rows() > 0;
+			if ($exists) {
+				// AUDIT: duplicate prevented
+				$this->AuditLogModel->write(
+					'create',
+					'User Accounts',
+					'o_users',
+					null,
+					null,
+					['username' => $username, 'position' => $acctLevel, 'email' => $email, 'IDNumber' => $IDNumber, 'name' => $fName . ' ' . $lName],
+					0,
+					'Duplicate username prevented'
+				);
 				$this->session->set_flashdata('danger', '<div class="alert alert-danger text-center"><b>The username is already taken. Please choose a different one.</b></div>');
-				redirect('Page/userAccounts');
-			} else {
-				// Prepare data for insertion
-				$data = array(
+				return redirect('Page/userAccounts');
+			}
+
+			// Prepare row
+			$data = [
+				'username'    => $username,
+				'password'    => $password,      // do not log
+				'position'    => $acctLevel,
+				'fName'       => $fName,
+				'mName'       => $mName,
+				'lName'       => $lName,
+				'email'       => $email,
+				'avatar'      => 'avatar.png',
+				'acctStat'    => 'active',
+				'dateCreated' => $dateCreated,
+				'IDNumber'    => $IDNumber
+			];
+
+			$ok = $this->db->insert('o_users', $data);
+			$pk = $ok ? (string)$this->db->insert_id() : null;
+
+			// AUDIT: create user (no passwords in audit)
+			$this->AuditLogModel->write(
+				'create',
+				'User Accounts',
+				'o_users',
+				$pk ?: $username, // fallback to username if no auto ID
+				null,
+				[
 					'username' => $username,
-					'password' => $password,
 					'position' => $acctLevel,
+					'email' => $email,
+					'IDNumber' => $IDNumber,
 					'fName' => $fName,
 					'mName' => $mName,
-					'lName' => $lName,
-					'email' => $email,
-					'avatar' => 'avatar.png',
-					'acctStat' => 'active',
-					'dateCreated' => $dateCreated,
-					'IDNumber' => $IDNumber
-				);
+					'lName' => $lName
+				],
+				$ok ? 1 : 0,
+				$ok ? 'Created user account' : 'Failed to create user account'
+			);
 
-				// Insert data into the database
-				$this->db->insert('o_users', $data);
-
-				// Set success flash message and redirect
-				$this->session->set_flashdata('success', '<div class="alert alert-success text-center"><b>New account has been created successfully.</b></div>');
-				redirect('Page/userAccounts');
-			}
+			$this->session->set_flashdata(
+				$ok ? 'success' : 'danger',
+				$ok
+					? '<div class="alert alert-success text-center"><b>New account has been created successfully.</b></div>'
+					: '<div class="alert alert-danger text-center"><b>Failed to create account.</b></div>'
+			);
+			return redirect('Page/userAccounts');
 		}
+
+		// 2) Render the page
+		$result['data'] = $this->StudentModel->userAccounts();
+		$this->load->view('user_accounts', $result);
 	}
+
 
 	public function copy_users_to_o_users()
 	{
@@ -4414,27 +4523,36 @@ class Page extends CI_Controller
 	}
 
 
-
-
 	public function updateNames()
 	{
-		// Execute the update query
 		$this->db->query("
-            UPDATE o_users u
-            JOIN studeprofile sp ON u.username = sp.StudentNumber
-            SET u.fName = sp.FirstName,
-                u.mName = sp.MiddleName,
-                u.lName = sp.LastName
-        ");
+        UPDATE o_users u
+        JOIN studeprofile sp ON u.username = sp.StudentNumber
+        SET u.fName = sp.FirstName,
+            u.mName = sp.MiddleName,
+            u.lName = sp.LastName
+    ");
 
-		// Check if the query executed successfully
-		if ($this->db->affected_rows() > 0) {
+		$aff = $this->db->affected_rows();
+
+		// AUDIT: bulk sync names (no old snapshot; too large)
+		$this->AuditLogModel->write(
+			'update',
+			'User Accounts',
+			'o_users',
+			null,
+			null,
+			['bulk_sync' => 'names', 'affected' => $aff],
+			1,
+			'Bulk-synced user names from studeprofile'
+		);
+
+		if ($aff > 0) {
 			$this->session->set_flashdata('success', 'Names have been successfully updated.');
-			redirect('Page/userAccounts');
 		} else {
 			$this->session->set_flashdata('success', 'No records were updated.');
-			redirect('Page/userAccounts');
 		}
+		return redirect('Page/userAccounts');
 	}
 
 
@@ -4476,85 +4594,80 @@ class Page extends CI_Controller
 		// Redirect to the user accounts page
 		redirect('Page/userAccounts');
 	}
-
-
 	public function resetPass()
 	{
-		$u = $this->input->get('u'); // Username to reset
-		$id = $this->session->userdata('username'); // Resetter username
+		$u  = (string)$this->input->get('u');              // Username to reset
+		$id = (string)$this->session->userdata('username'); // Resetter username
 
-		// Use your getSchoolName() function
+		// Config + login URL
 		$schoolName = $this->SettingsModel->getSchoolName();
-		$loginURL = base_url('login'); // Since portal_url is not fetched, use base_url fallback
+		$loginURL   = base_url('login');
 
-		// Generate 12-character random password
-		$password = bin2hex(random_bytes(6));
-		$hashedPassword = sha1($password);
+		// Generate new password (12 chars hex) + hash
+		$password       = bin2hex(random_bytes(6));
+		$hashedPassword = sha1($password); // keep your hashing scheme
 
 		date_default_timezone_set('Asia/Manila');
-		$now = date('H:i:s A');
+		$now  = date('H:i:s A');
 		$date = date('Y-m-d');
 
 		// Fetch user email
 		$user = $this->db->get_where('o_users', ['username' => $u])->row();
 		if (!$user || empty($user->email)) {
+			$this->AuditLogModel->write(
+				'update',
+				'User Accounts',
+				'o_users',
+				$u,
+				null,
+				null,
+				0,
+				'Password reset failed (no email on file)',
+				['reset_by' => $id]
+			);
 			$this->session->set_flashdata('danger', '<div class="alert alert-danger text-center"><b>Email not found for the selected user.</b></div>');
-			redirect('Page/userAccounts');
-			return;
+			return redirect('Page/userAccounts');
 		}
 
 		// Update password
-		$this->db->where('username', $u);
-		$this->db->update('o_users', ['password' => $hashedPassword]);
+		$ok = $this->db->where('username', $u)->update('o_users', ['password' => $hashedPassword]);
 
-		// Audit log
-		$this->db->insert('atrail', [
-			'atrailID' => '',
-			'atDesc' => 'Password reset',
-			'atDate' => $date,
-			'atTime' => $now,
-			'atRes' => $id,
-			'atSNo' => $u
-		]);
+		// AUDIT: unified audit (no password in logs)
+		$this->AuditLogModel->write(
+			'update',
+			'User Accounts',
+			'o_users',
+			$u,
+			null,
+			['password_reset' => true, 'email_to' => $user->email, 'reset_by' => $id],
+			$ok ? 1 : 0,
+			$ok ? 'Reset user password' : 'Failed to reset user password'
+		);
 
-		// Send email
+		// Send email (your existing email content)
 		$this->load->config('email');
 		$this->load->library('email');
 		$this->email->set_mailtype("html");
 
 		$mail_message = '
 <div style="font-family: Arial, sans-serif; background-color: #f4f4f4; padding: 20px;">
-    <div style="max-width: 600px; margin: auto; background: white; border-radius: 6px; padding: 30px;">
-        <h2 style="color: #2b6cb0;">Password Reset Notification</h2>
-        <p>Dear <strong>' . htmlspecialchars($user->fName) . '</strong>,</p>
-
-        <p>Your password has been successfully reset.</p>
-
-        <p><strong>Here are your new login credentials:</strong></p>
-        <table style="width: 100%; max-width: 400px; border-collapse: collapse; margin-bottom: 20px;">
-            <tr>
-                <td style="padding: 8px; background: #f1f1f1; border: 1px solid #ccc;"><strong>Username</strong></td>
-                <td style="padding: 8px; border: 1px solid #ccc;">' . htmlspecialchars($u) . '</td>
-            </tr>
-            <tr>
-                <td style="padding: 8px; background: #f1f1f1; border: 1px solid #ccc;"><strong>New Password</strong></td>
-                <td style="padding: 8px; border: 1px solid #ccc;">' . $password . '</td>
-            </tr>
-        </table>
-
-        <p>You may log in using the button below:</p>
-        <p>
-            <a href="' . htmlspecialchars($loginURL) . '" style="display: inline-block; padding: 10px 20px; background: #007bff; color: white; text-decoration: none; border-radius: 4px;">
-                Login Now
-            </a>
-        </p>
-
-        <p style="margin-top: 30px;">Best regards,<br><strong>' . htmlspecialchars($schoolName) . ' FBMSO Team</strong></p>
-        <hr style="margin-top: 40px;">
-        <p style="font-size: 12px; color: #999;">This is an automated message from Faculty of Business and Management Student Organization. Please do not reply.</p>
-    </div>
+  <div style="max-width: 600px; margin: auto; background: white; border-radius: 6px; padding: 30px;">
+    <h2 style="color: #2b6cb0;">Password Reset Notification</h2>
+    <p>Dear <strong>' . htmlspecialchars($user->fName) . '</strong>,</p>
+    <p>Your password has been successfully reset.</p>
+    <p><strong>Here are your new login credentials:</strong></p>
+    <table style="width: 100%; max-width: 400px; border-collapse: collapse; margin-bottom: 20px;">
+      <tr><td style="padding:8px;background:#f1f1f1;border:1px solid #ccc;"><strong>Username</strong></td>
+          <td style="padding:8px;border:1px solid #ccc;">' . htmlspecialchars($u) . '</td></tr>
+      <tr><td style="padding:8px;background:#f1f1f1;border:1px solid #ccc;"><strong>New Password</strong></td>
+          <td style="padding:8px;border:1px solid #ccc;">' . $password . '</td></tr>
+    </table>
+    <p><a href="' . htmlspecialchars($loginURL) . '" style="display:inline-block;padding:10px 20px;background:#007bff;color:white;text-decoration:none;border-radius:4px;">Login Now</a></p>
+    <p style="margin-top:30px;">Best regards,<br><strong>' . htmlspecialchars($schoolName) . ' FBMSO Team</strong></p>
+    <hr style="margin-top:40px;">
+    <p style="font-size:12px;color:#999;">This is an automated message from Faculty of Business and Management Student Organization. Please do not reply.</p>
+  </div>
 </div>';
-
 
 		$this->email->from('no-reply@srmsportal.com', $schoolName);
 		$this->email->to($user->email);
@@ -4562,28 +4675,39 @@ class Page extends CI_Controller
 		$this->email->message($mail_message);
 		@$this->email->send();
 
-		// Flash message and redirect
-		$this->session->set_flashdata('success', '<div class="alert alert-success text-center"><b>Password reset successfully. New password sent via email.<br><br>New Password: <span style="color: red;">' . $password . '</span></b></div>');
-		redirect('Page/userAccounts');
+		$this->session->set_flashdata(
+			'success',
+			'<div class="alert alert-success text-center"><b>Password reset successfully. New password sent via email.<br><br>New Password: <span style="color: red;">' . $password . '</span></b></div>'
+		);
+		return redirect('Page/userAccounts');
 	}
-
 	public function updateUserInfo()
 	{
 		if ($this->input->post('submitEdit')) {
-			$username   = $this->input->post('username');
-			$acctLevel  = $this->input->post('acctLevel');
-			$email      = $this->input->post('email');
+			$username  = trim((string)$this->input->post('username'));
+			$acctLevel = trim((string)$this->input->post('acctLevel'));
+			$email     = trim((string)$this->input->post('email'));
 
 			if ($username && $acctLevel && $email) {
-				$data = array(
-					'position' => $acctLevel,
-					'email' => $email
+				// OLD snapshot
+				$old = $this->db->get_where('o_users', ['username' => $username])->row_array();
+
+				$data = ['position' => $acctLevel, 'email' => $email];
+				$ok = $this->db->where('username', $username)->update('o_users', $data);
+
+				// AUDIT: update user info
+				$this->AuditLogModel->write(
+					'update',
+					'User Accounts',
+					'o_users',
+					$username,
+					$old ? ['position' => $old['position'] ?? null, 'email' => $old['email'] ?? null] : null,
+					$data,
+					$ok ? 1 : 0,
+					$ok ? 'Updated user info' : 'Failed to update user info'
 				);
 
-				$this->db->where('username', $username);
-				$this->db->update('o_users', $data);
-
-				if ($this->db->affected_rows() > 0) {
+				if ($ok && $this->db->affected_rows() > 0) {
 					$this->session->set_flashdata('success', 'Account info updated successfully.');
 				} else {
 					$this->session->set_flashdata('danger', 'Update failed. No changes or user not found.');
@@ -4593,8 +4717,9 @@ class Page extends CI_Controller
 			}
 		}
 
-		redirect('Page/userAccounts');
+		return redirect('Page/userAccounts');
 	}
+
 
 
 	function medRecords()
@@ -6592,12 +6717,25 @@ class Page extends CI_Controller
 			return;
 		}
 
-		// Explicitly block updates from this view
 		if ($this->input->method(true) === 'POST') {
+
+			// AUDIT: blocked update attempt (read-only)
+			$this->AuditLogModel->write(
+				'update',
+				'Signup',
+				'studentsignup',
+				(string)$id,
+				null,
+				null,
+				0,
+				'Blocked edit attempt on read-only signup view'
+			);
+
 			$this->session->set_flashdata('danger', 'Editing student profiles is disabled for administrators.');
 			redirect('Page/profileList');
 			return;
 		}
+
 
 		// Fetch options for dropdowns (Course, Major, Year Level, Section)
 		$result['courses'] = $this->StudentModel->get_courseTable();  // Fetch courses
@@ -6637,7 +6775,6 @@ class Page extends CI_Controller
 
 		$this->load->view('manage_sections', $data);
 	}
-
 	public function addSection()
 	{
 		if ($this->input->post()) {
@@ -6649,8 +6786,21 @@ class Page extends CI_Controller
 				'is_active'  => 1
 			];
 
-			// Insert data into the database
+			// Insert data into the database (your model)
 			$inserted = $this->CourseSectionModel->addSection($sectionData);
+
+			// AUDIT: create section
+			$this->AuditLogModel->write(
+				'create',
+				'Sections',
+				'course_sections',     // adjust if your actual table name differs
+				null,                  // record_pk unknown (model hides it); okay to leave null
+				null,
+				$sectionData,
+				$inserted ? 1 : 0,
+				$inserted ? 'Created section' : 'Failed to create section'
+			);
+
 			if ($inserted) {
 				$this->session->set_flashdata('success', 'Section added successfully.');
 			} else {
@@ -6673,11 +6823,18 @@ class Page extends CI_Controller
 			$this->load->view('manage_sections', $data);
 		}
 	}
-
-	// Edit Section
 	public function editSection($id)
 	{
 		if ($this->input->post()) {
+			// Snapshot old row BEFORE update
+			$oldRow = $this->CourseSectionModel->getSectionById($id);
+			$old = $oldRow ? [
+				'courseid'   => $oldRow->courseid ?? null,
+				'year_level' => $oldRow->year_level ?? null,
+				'section'    => $oldRow->section ?? null,
+				'is_active'  => $oldRow->is_active ?? null,
+			] : null;
+
 			// Get updated section data from the form
 			$sectionData = [
 				'courseid'   => $this->input->post('courseid'),
@@ -6687,6 +6844,19 @@ class Page extends CI_Controller
 
 			// Update the section in the database
 			$updated = $this->CourseSectionModel->updateSection($id, $sectionData);
+
+			// AUDIT: update section
+			$this->AuditLogModel->write(
+				'update',
+				'Sections',
+				'course_sections',   // adjust if needed
+				(string)$id,
+				$old,
+				$sectionData,
+				$updated ? 1 : 0,
+				$updated ? 'Updated section' : 'Failed to update section'
+			);
+
 			if ($updated) {
 				$this->session->set_flashdata('success', 'Section updated successfully.');
 			} else {
@@ -6710,10 +6880,31 @@ class Page extends CI_Controller
 		}
 	}
 
-	// Delete Section
 	public function deleteSection($id)
 	{
+		// Snapshot old row BEFORE delete
+		$oldRow = $this->CourseSectionModel->getSectionById($id);
+		$old = $oldRow ? [
+			'courseid'   => $oldRow->courseid ?? null,
+			'year_level' => $oldRow->year_level ?? null,
+			'section'    => $oldRow->section ?? null,
+			'is_active'  => $oldRow->is_active ?? null,
+		] : null;
+
 		$deleted = $this->CourseSectionModel->deleteSection($id);
+
+		// AUDIT: delete section
+		$this->AuditLogModel->write(
+			'delete',
+			'Sections',
+			'course_sections',    // adjust if needed
+			(string)$id,
+			$old,
+			null,
+			$deleted ? 1 : 0,
+			$deleted ? 'Deleted section' : 'Failed to delete section'
+		);
+
 		if ($deleted) {
 			$this->session->set_flashdata('success', 'Section deleted successfully.');
 		} else {

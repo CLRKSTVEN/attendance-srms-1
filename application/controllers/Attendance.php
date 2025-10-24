@@ -12,6 +12,7 @@ class Attendance extends CI_Controller
         $this->load->model('Student_qr_model');
         $this->load->model('Activity_attendance_model');
         $this->load->model('Activities_model', 'ActivitiesModel');
+        $this->load->model('AuditLogModel');
     }
 
     public function scan($activity_id)
@@ -19,6 +20,19 @@ class Attendance extends CI_Controller
         $activity = $this->ActivitiesModel->find((int)$activity_id);
         if (!$activity) show_404();
         $data['activity'] = $activity;
+
+        // (optional) AUDIT: scan page opened
+        $this->AuditLogModel->write(
+            'update',
+            'Attendance',
+            'scan_ui',
+            (string)$activity_id,
+            null,
+            ['opened_by' => ($this->session->userdata('username') ?: null)],
+            1,
+            'Opened activity scan page'
+        );
+
         $this->load->view('scan_page', $data);
     }
 
@@ -126,8 +140,36 @@ class Attendance extends CI_Controller
                 }
             }
         }
-
         $this->db->db_debug = $old_debug;
+
+        /* ================== AUDIT: QR consume (scan) ================== */
+        $actor =
+            (string)$this->session->userdata('name')
+            ?: (string)$this->session->userdata('username')
+            ?: (string)$this->session->userdata('IDNumber')
+            ?: null;
+
+        $recordPk = isset($op['id']) ? (string)$op['id'] : null;
+        $mode     = isset($op['mode']) ? (string)$op['mode'] : null;
+        $okFlag   = !empty($op['ok']) && $op['ok'] ? 1 : 0;
+
+        $this->AuditLogModel->write(
+            'update',
+            'Attendance',
+            'activity_attendance',
+            $recordPk,           // row id affected (if any)
+            null,                // old snapshot not needed here
+            [
+                'activity_id' => $activity_id,
+                'mode'        => $mode,           // 'checked_in' | 'checked_out' | 'err'
+                'direction'   => $direction,      // 'in' | 'out' | 'auto'
+                'remarks'     => ($postedRemarks !== '' ? $postedRemarks : 'Scanned via QR'),
+                'actor'       => $actor
+            ],
+            $okFlag,
+            $okFlag ? 'QR consume success' : 'QR consume failed'
+        );
+        /* =============================================================== */
 
         return $this->output->set_content_type('application/json')
             ->set_output(json_encode($op));
@@ -233,6 +275,28 @@ class Attendance extends CI_Controller
         }
 
         $res = $this->AttendanceModel->consume_token($activity_id, $qr->token, $direction);
+
+        /* ================== AUDIT: Self check-in/out ================== */
+        $recordPk = isset($res['id']) ? (string)$res['id'] : null;
+        $mode     = isset($res['mode']) ? (string)$res['mode'] : null;
+        $okFlag   = !empty($res['ok']) && $res['ok'] ? 1 : 0;
+
+        $this->AuditLogModel->write(
+            'update',
+            'Attendance',
+            'activity_attendance',
+            $recordPk,
+            null,
+            [
+                'activity_id'    => $activity_id,
+                'student_number' => $student_number,
+                'mode'           => $mode,        // 'checked_in' | 'checked_out' | 'err'
+                'direction'      => $direction    // 'in' | 'out' | 'auto'
+            ],
+            $okFlag,
+            $okFlag ? 'Self check event' : 'Self check failed'
+        );
+        /* =============================================================== */
 
         $data = [
             'activity_id'    => $activity_id,

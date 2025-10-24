@@ -12,7 +12,7 @@ class Settings extends CI_Controller
 		$this->load->model('SettingsModel');
 		$this->load->model('Login_model');
 		$this->load->library('user_agent');
-
+		$this->load->model('AuditLogModel');
 
 		if ($this->session->userdata('logged_in') !== TRUE) {
 			redirect('login');
@@ -65,37 +65,38 @@ class Settings extends CI_Controller
 			redirect('Settings/loginFormBanner');
 		}
 	}
-public function Sections()
-{
-    $this->load->model('SettingsModel');
 
-    // Get unique year levels and courses for dropdowns
-    $result['yearLevels'] = $this->SettingsModel->get_year_levels1(); // Fetch distinct year levels
-    $result['courses'] = $this->SettingsModel->get_courseTable1(); // Fetch distinct courses
-    $result['desc'] = $this->SettingsModel->get_course(); // Fetch distinct courses
+	public function Sections()
+	{
+		$this->load->model('SettingsModel');
 
-    // Get filter values from URL
-    $selectedYearLevel = $this->input->get('yearLevel');
-    $selectedCourse = $this->input->get('course');
+		// Get unique year levels and courses for dropdowns
+		$result['yearLevels'] = $this->SettingsModel->get_year_levels1(); // Fetch distinct year levels
+		$result['courses'] = $this->SettingsModel->get_courseTable1(); // Fetch distinct courses
+		$result['desc'] = $this->SettingsModel->get_course(); // Fetch distinct courses
 
-    // Query the course_sections table with filters
-    $this->db->select('*');
-    $this->db->from('course_sections');  // Change to 'course_sections'
+		// Get filter values from URL
+		$selectedYearLevel = $this->input->get('yearLevel');
+		$selectedCourse = $this->input->get('course');
 
-    if ($selectedYearLevel) {
-        $this->db->where('YearLevel', $selectedYearLevel);
-    }
-    if ($selectedCourse) {
-        $this->db->where('Course', $selectedCourse);
-    }
+		// Query the course_sections table with filters
+		$this->db->select('*');
+		$this->db->from('course_sections');  // Change to 'course_sections'
 
-    $this->db->order_by('Section', 'ASC');
-    $query = $this->db->get();
-    $result['data'] = $query->result(); // Store filtered sections
+		if ($selectedYearLevel) {
+			$this->db->where('YearLevel', $selectedYearLevel);
+		}
+		if ($selectedCourse) {
+			$this->db->where('Course', $selectedCourse);
+		}
 
-    // Load the view with filtered data
-    $this->load->view('settings_sections', $result);
-}
+		$this->db->order_by('Section', 'ASC');
+		$query = $this->db->get();
+		$result['data'] = $query->result(); // Store filtered sections
+
+		// Load the view with filtered data
+		$this->load->view('settings_sections', $result);
+	}
 
 	//delete Section
 	public function deleteSection()
@@ -110,79 +111,103 @@ public function Sections()
 		$this->session->set_flashdata('msg', '<div class="alert alert-success text-center"><b>Section deleted successfully.</b></div>');
 		redirect('Settings/Sections');
 	}
-	//delete Course
 	public function deleteCourse()
 	{
 		// Get the course ID from GET parameters
 		$id = $this->input->get('id');
 		$username = $this->session->userdata('username');
 
+		// Snapshot BEFORE delete
+		$old = $this->db->get_where('course_table', ['courseid' => $id])->row_array();
+
 		// Set timezone and get current date and time
 		date_default_timezone_set('Asia/Manila'); // Adjust to your timezone
 		$now = date('H:i:s A');
 		$date = date("Y-m-d");
 
-		// Delete the course record
-		$query = $this->db->query("DELETE FROM course_table WHERE courseid='" . $id . "'");
+		// Delete the course record (use query builder to avoid injections)
+		$ok = $this->db->delete('course_table', ['courseid' => $id]);
 
-		// Log the deletion action in the trail
-		$query = $this->db->query("INSERT INTO atrail VALUES('', 'Deleted a Course', '$date', '$now', '$username', '$id')");
+		// Keep your legacy trail (unchanged)
+		$this->db->query("INSERT INTO atrail VALUES('', 'Deleted a Course', '$date', '$now', '$username', '$id')");
 
-		// Set a success message and redirect
+		// AUDIT: delete course (unified audit_logs)
+		$this->AuditLogModel->write(
+			'delete',
+			'Courses',
+			'course_table',
+			(string)$id,
+			$old ? [
+				'CourseCode'        => $old['CourseCode']        ?? null,
+				'CourseDescription' => $old['CourseDescription'] ?? null,
+				'Major'             => $old['Major']             ?? null,
+				'Duration'          => $old['Duration']          ?? null,
+				'recogNo'           => $old['recogNo']           ?? null,
+				'SeriesYear'        => $old['SeriesYear']        ?? null,
+				'IDNumber'          => $old['IDNumber']          ?? null,
+			] : null,
+			null,
+			$ok ? 1 : 0,
+			$ok ? 'Deleted course' : 'Failed to delete course'
+		);
+
+		// Set a success message and redirect (your original UX)
 		$this->session->set_flashdata('msg', '<div class="alert alert-success text-center"><b>Course deleted successfully.</b></div>');
 		redirect('Settings/Department');
 	}
-// In the Controller
-public function SectionsList() {
-    $course = $this->input->get('Course');
-    $major = $this->input->get('Major');
-    
-    // Fetch sections based on course and major
-    $data['sections'] = $this->SettingsModel->getSectionsByCourseAndMajor($course, $major);
-    $data['course'] = $course;
-    $data['major'] = $major;
 
-    // Pass the data to the view
-    $this->load->view('sections_view', $data); // Ensure this view matches the data structure
-}
+	// In the Controller
+	public function SectionsList()
+	{
+		$course = $this->input->get('Course');
+		$major = $this->input->get('Major');
 
-public function addSection()
-{
-    // Get the Course and Major values from the input
-    $course = $this->input->post('Course');
-    $major = $this->input->post('Major');
+		// Fetch sections based on course and major
+		$data['sections'] = $this->SettingsModel->getSectionsByCourseAndMajor($course, $major);
+		$data['course'] = $course;
+		$data['major'] = $major;
 
-    // Call getSectionsByCourseAndMajor to check if the section already exists
-    $sections = $this->SettingsModel->getSectionsByCourseAndMajor($course, $major);
+		// Pass the data to the view
+		$this->load->view('sections_view', $data); // Ensure this view matches the data structure
+	}
 
-    // If no sections are returned, proceed with adding the new section
-    if (empty($sections)) {
-        $data = [
-            'courseid' => $course,  // Correct column name in course_sections
-            'year_level' => $this->input->post('YearLevel'),
-            'section' => $this->input->post('Section'),
-            'is_active' => 1,       // Assuming active by default
-            'created_at' => date('Y-m-d H:i:s')  // Correct timestamp
-        ];
+	public function addSection()
+	{
+		// Get the Course and Major values from the input
+		$course = $this->input->post('Course');
+		$major = $this->input->post('Major');
 
-        // Insert the new section into the course_sections table
-        $this->SettingsModel->insertSection($data);
-        $this->session->set_flashdata('msg', '<div class="alert alert-success">Section added successfully.</div>');
-    } else {
-        // If the section already exists, display a message
-        $this->session->set_flashdata('msg', '<div class="alert alert-warning">Section already exists for this course and major.</div>');
-    }
+		// Call getSectionsByCourseAndMajor to check if the section already exists
+		$sections = $this->SettingsModel->getSectionsByCourseAndMajor($course, $major);
 
-    // Redirect to the previous page
-    redirect($this->agent->referrer());
-}
+		// If no sections are returned, proceed with adding the new section
+		if (empty($sections)) {
+			$data = [
+				'courseid' => $course,  // Correct column name in course_sections
+				'year_level' => $this->input->post('YearLevel'),
+				'section' => $this->input->post('Section'),
+				'is_active' => 1,       // Assuming active by default
+				'created_at' => date('Y-m-d H:i:s')  // Correct timestamp
+			];
 
-public function insertSection($data)
-{
-    // Make sure you are inserting into the correct table
-    $this->db->insert('course_sections', $data);  // This is the correct table: course_sections
-	
-}
+			// Insert the new section into the course_sections table
+			$this->SettingsModel->insertSection($data);
+			$this->session->set_flashdata('msg', '<div class="alert alert-success">Section added successfully.</div>');
+		} else {
+			// If the section already exists, display a message
+			$this->session->set_flashdata('msg', '<div class="alert alert-warning">Section already exists for this course and major.</div>');
+		}
+
+		// Redirect to the previous page
+		redirect($this->agent->referrer());
+	}
+
+	public function insertSection($data)
+	{
+		// Make sure you are inserting into the correct table
+		$this->db->insert('course_sections', $data);  // This is the correct table: course_sections
+
+	}
 
 
 
@@ -197,40 +222,105 @@ public function insertSection($data)
 		$this->load->view('settings_department', $result);
 
 		if ($this->input->post('submit')) {
-			// Get data from the form
-			$CourseCode = $this->input->post('CourseCode');
-			$CourseDescription = $this->input->post('CourseDescription');
-			$Major = $this->input->post('Major');
-			$Duration = $this->input->post('Duration');
-			$recogNo = $this->input->post('recogNo');
-			$SeriesYear = $this->input->post('SeriesYear');
-			$ProgramHead = $this->input->post('ProgramHead');
-			$IDNumber = $this->input->post('IDNumber');
+			// Collect form data
+			$CourseCode        = trim((string)$this->input->post('CourseCode'));
+			$CourseDescription = trim((string)$this->input->post('CourseDescription'));
+			$Major             = trim((string)$this->input->post('Major'));
+			$Duration          = trim((string)$this->input->post('Duration'));
+			$recogNo           = trim((string)$this->input->post('recogNo'));
+			$SeriesYear        = trim((string)$this->input->post('SeriesYear'));
+			$ProgramHead       = trim((string)$this->input->post('ProgramHead'));
+			$IDNumber          = trim((string)$this->input->post('IDNumber'));
 
-			date_default_timezone_set('Asia/Manila'); // Set timezone
-			$now = date('H:i:s A');
-			$date = date("Y-m-d");
-			$Encoder = $this->session->userdata('username');
+			date_default_timezone_set('Asia/Manila');
+			$now     = date('H:i:s A');
+			$date    = date('Y-m-d');
+			$Encoder = (string)$this->session->userdata('username');
 
-			$description = 'Encoded a Course ' . $CourseDescription;
+			$new = [
+				'CourseCode'        => $CourseCode,
+				'CourseDescription' => $CourseDescription,
+				'Major'             => $Major,
+				'Duration'          => $Duration,
+				'recogNo'           => $recogNo,
+				'SeriesYear'        => $SeriesYear,
+				'ProgramHead'       => $ProgramHead,
+				'IDNumber'          => $IDNumber,
+			];
 
-			// Check if record already exists
-			$que = $this->db->query("SELECT * FROM course_table WHERE CourseDescription = '$CourseDescription' AND Major = '$Major'");
-			$row = $que->num_rows();
+			// Basic required fields (optional but useful)
+			if ($CourseCode === '' || $CourseDescription === '') {
+				$this->AuditLogModel->write(
+					'create',
+					'Courses',
+					'course_table',
+					null,
+					null,
+					$new,
+					0,
+					'Failed to create course (missing required fields)',
+					['encoder' => $Encoder]
+				);
+				$this->session->set_flashdata('msg', '<div class="alert alert-danger text-center"><b>Course Code and Course Description are required.</b></div>');
+				redirect('Settings/Department');
+				return;
+			}
 
-			if ($row > 0) {
-				// Flash message for duplicate entry
+			// Duplicate check (CourseDescription + Major)
+			$dup = $this->db->where('CourseDescription', $CourseDescription)
+				->where('Major', $Major)
+				->limit(1)
+				->get('course_table')
+				->num_rows() > 0;
+
+			if ($dup) {
+				// AUDIT: duplicate create attempt
+				$this->AuditLogModel->write(
+					'create',
+					'Courses',
+					'course_table',
+					null,
+					null,
+					$new,
+					0,
+					'Duplicate course prevented',
+					['encoder' => $Encoder]
+				);
+
 				$this->session->set_flashdata('msg', '<div class="alert alert-danger text-center"><b>Duplicate entry. The record already exists.</b></div>');
 				redirect('Settings/Department');
-			} else {
-				// Save record and track changes
-				$this->db->query("INSERT INTO course_table VALUES('', '$CourseCode', '$CourseDescription', '$Major', '$Duration', '$recogNo', '$SeriesYear', '$ProgramHead', '$IDNumber')");
-				$this->db->query("INSERT INTO atrail VALUES('', '$description', '$date', '$now', '$Encoder', '')");
-
-				// Flash success message
-				$this->session->set_flashdata('msg', '<div class="alert alert-success text-center"><b>One record added successfully.</b></div>');
-				redirect('Settings/Department');
+				return;
 			}
+
+			// Insert using Query Builder (safer) to get insert_id
+			$ok = $this->db->insert('course_table', $new);
+			$insertId = $ok ? (string)$this->db->insert_id() : null;
+
+			// Keep your legacy trail row
+			$description = 'Encoded a Course ' . $CourseDescription;
+			$this->db->query("INSERT INTO atrail VALUES('', ?, ?, ?, ?, '')", [$description, $date, $now, $Encoder]);
+
+			// AUDIT: create course (success/fail)
+			$this->AuditLogModel->write(
+				'create',
+				'Courses',
+				'course_table',
+				$insertId,
+				null,
+				$new,
+				$ok ? 1 : 0,
+				$ok ? 'Created course' : 'Failed to create course',
+				['encoder' => $Encoder]
+			);
+
+			// Flash + redirect
+			$this->session->set_flashdata(
+				'msg',
+				$ok
+					? '<div class="alert alert-success text-center"><b>One record added successfully.</b></div>'
+					: '<div class="alert alert-danger text-center"><b>Failed to add record.</b></div>'
+			);
+			redirect('Settings/Department');
 		}
 	}
 
@@ -397,7 +487,7 @@ public function insertSection($data)
 
 
 
-		function rooms()
+	function rooms()
 	{
 		$result['data'] = $this->SettingsModel->get_rooms();
 		$this->load->view('settings_rooms', $result);
@@ -423,7 +513,7 @@ public function insertSection($data)
 
 
 
-public function updateRoom()
+	public function updateRoom()
 	{
 		$roomID = $this->input->get('roomID');
 		$result['data'] = $this->SettingsModel->getroombyId($roomID);
@@ -482,28 +572,52 @@ public function updateRoom()
 		// Check if the form has been submitted
 		if ($this->input->post('update')) {
 
+			// Build a lightweight "old" snapshot from the row you already fetched
+			$oldRow = is_array($result['data']) ? (object)$result['data'] : $result['data']; // handle either object/array
+			$old = [
+				'CourseCode'        => $oldRow->CourseCode        ?? null,
+				'CourseDescription' => $oldRow->CourseDescription ?? null,
+				'Major'             => $oldRow->Major             ?? null,
+				'Duration'          => $oldRow->Duration          ?? null,
+				'recogNo'           => $oldRow->recogNo           ?? null,
+				'SeriesYear'        => $oldRow->SeriesYear        ?? null,
+				'IDNumber'          => $oldRow->IDNumber          ?? null,
+			];
+
 			// Get the updated course data from POST request
-			$CourseCode = $this->input->post('CourseCode');
+			$CourseCode        = $this->input->post('CourseCode');
 			$CourseDescription = $this->input->post('CourseDescription');
-			$Major = $this->input->post('Major');
-			$Duration = $this->input->post('Duration');
-			$recogNo = $this->input->post('recogNo');
-			$SeriesYear = $this->input->post('SeriesYear');
-			$IDNumber = $this->input->post('IDNumber');
+			$Major             = $this->input->post('Major');
+			$Duration          = $this->input->post('Duration');
+			$recogNo           = $this->input->post('recogNo');
+			$SeriesYear        = $this->input->post('SeriesYear');
+			$IDNumber          = $this->input->post('IDNumber');
 
 			// Prepare the data array for updating
 			$data = [
-				'CourseCode' => $CourseCode,
+				'CourseCode'        => $CourseCode,
 				'CourseDescription' => $CourseDescription,
-				'Major' => $Major,
-				'Duration' => $Duration,
-				'recogNo' => $recogNo,
-				'SeriesYear' => $SeriesYear,
-				'IDNumber' => $IDNumber
+				'Major'             => $Major,
+				'Duration'          => $Duration,
+				'recogNo'           => $recogNo,
+				'SeriesYear'        => $SeriesYear,
+				'IDNumber'          => $IDNumber
 			];
 
 			// Update the course in the database
 			$this->SettingsModel->updateCourse($courseid, $data);
+
+			// AUDIT: course update
+			$this->AuditLogModel->write(
+				'update',
+				'Courses',
+				'course_table',
+				(string)$courseid,
+				$old,       // old values
+				$data,      // new values
+				1,          // assume success (your code doesn’t branch on failure)
+				'Updated course'
+			);
 
 			// Set a success message and redirect
 			$this->session->set_flashdata('msg', '<div class="alert alert-success text-center"><b>Course updated successfully.</b></div>');
@@ -1320,72 +1434,72 @@ public function updateRoom()
 	// 	redirect($this->agent->referrer());
 	// }
 
-// Controller: Settings.php
-public function getRooms()
-{
-    // adjust table/filters as needed (e.g., by settingsID)
-    $rows = $this->db->select('Room')
-                     ->from('rooms')
-                     ->order_by('Room','ASC')
-                     ->get()->result();
-    $this->output->set_content_type('application/json')
-                 ->set_output(json_encode($rows));
-}
+	// Controller: Settings.php
+	public function getRooms()
+	{
+		// adjust table/filters as needed (e.g., by settingsID)
+		$rows = $this->db->select('Room')
+			->from('rooms')
+			->order_by('Room', 'ASC')
+			->get()->result();
+		$this->output->set_content_type('application/json')
+			->set_output(json_encode($rows));
+	}
 
 
 
 	public function updateClassform()
-{
-    // Get all POST inputs
-    $formData = $this->input->post();
-    if (empty($formData['subjectid'])) {
-        $this->session->set_flashdata('error', 'Missing subject ID.');
-        return redirect($this->agent->referrer());
-    }
+	{
+		// Get all POST inputs
+		$formData = $this->input->post();
+		if (empty($formData['subjectid'])) {
+			$this->session->set_flashdata('error', 'Missing subject ID.');
+			return redirect($this->agent->referrer());
+		}
 
-    $subjectId = (int)$formData['subjectid'];
-    unset($formData['subjectid']);
+		$subjectId = (int)$formData['subjectid'];
+		unset($formData['subjectid']);
 
-    // Whitelist fields based on semsubjects columns
-    $fields = $this->db->list_fields('semsubjects');
-    $dataToUpdate = array_intersect_key($formData, array_flip($fields));
+		// Whitelist fields based on semsubjects columns
+		$fields = $this->db->list_fields('semsubjects');
+		$dataToUpdate = array_intersect_key($formData, array_flip($fields));
 
-    // Begin transaction
-    $this->db->trans_start();
+		// Begin transaction
+		$this->db->trans_start();
 
-    // Update semsubjects
-    $this->db->where('subjectid', $subjectId)->update('semsubjects', $dataToUpdate);
+		// Update semsubjects
+		$this->db->where('subjectid', $subjectId)->update('semsubjects', $dataToUpdate);
 
-    // Fetch the updated subject to drive the registration update
-    $subject = $this->db->get_where('semsubjects', ['subjectid' => $subjectId])->row();
+		// Fetch the updated subject to drive the registration update
+		$subject = $this->db->get_where('semsubjects', ['subjectid' => $subjectId])->row();
 
-    if ($subject) {
-        // Fields to push down to registration
-        $registrationUpdate = [
-            'SchedTime' => $subject->SchedTime,
-            'IDNumber'  => $subject->IDNumber,
-            'Room'      => $subject->Room,
-        ];
+		if ($subject) {
+			// Fields to push down to registration
+			$registrationUpdate = [
+				'SchedTime' => $subject->SchedTime,
+				'IDNumber'  => $subject->IDNumber,
+				'Room'      => $subject->Room,
+			];
 
-        // Match your SELECT filter exactly (no Room here)
-        $this->db->where('SubjectCode', $subject->SubjectCode)
-                 ->where('Section', $subject->Section)
-                 ->where('SY', $this->session->userdata('sy'))
-                 ->where('Sem', $this->session->userdata('semester'))
-                 ->where('Description', $subject->Description)
-                 ->update('registration', $registrationUpdate);
-    }
+			// Match your SELECT filter exactly (no Room here)
+			$this->db->where('SubjectCode', $subject->SubjectCode)
+				->where('Section', $subject->Section)
+				->where('SY', $this->session->userdata('sy'))
+				->where('Sem', $this->session->userdata('semester'))
+				->where('Description', $subject->Description)
+				->update('registration', $registrationUpdate);
+		}
 
-    $this->db->trans_complete();
+		$this->db->trans_complete();
 
-    if ($this->db->trans_status() === FALSE) {
-        $this->session->set_flashdata('error', 'Update failed. Please try again.');
-    } else {
-        $this->session->set_flashdata('success', 'Class Program successfully updated.');
-    }
+		if ($this->db->trans_status() === FALSE) {
+			$this->session->set_flashdata('error', 'Update failed. Please try again.');
+		} else {
+			$this->session->set_flashdata('success', 'Class Program successfully updated.');
+		}
 
-    redirect($this->agent->referrer());
-}
+		redirect($this->agent->referrer());
+	}
 
 
 
@@ -1578,89 +1692,89 @@ public function getRooms()
 		$major = $courseRow->Major;
 
 		if ($_SERVER['REQUEST_METHOD'] === 'POST' && $this->input->post('SubjectCode')) {
-    $subjectCodes = $this->input->post('SubjectCode');
-    $descriptions = $this->input->post('Description');
-    $lecUnits     = $this->input->post('LecUnit');
-    $labUnits     = $this->input->post('LabUnit');
-    $instructors  = $this->input->post('IDNumber');
-    $rooms        = $this->input->post('Room');        // NEW
-    $schedTimes   = $this->input->post('SchedTime');
+			$subjectCodes = $this->input->post('SubjectCode');
+			$descriptions = $this->input->post('Description');
+			$lecUnits     = $this->input->post('LecUnit');
+			$labUnits     = $this->input->post('LabUnit');
+			$instructors  = $this->input->post('IDNumber');
+			$rooms        = $this->input->post('Room');        // NEW
+			$schedTimes   = $this->input->post('SchedTime');
 
-    $yearLevel  = $this->input->post('YearLevel');
-    $section    = $this->input->post('Section');
+			$yearLevel  = $this->input->post('YearLevel');
+			$section    = $this->input->post('Section');
 
-    $inserted = 0;
-    $skipped  = 0;
+			$inserted = 0;
+			$skipped  = 0;
 
-    $this->db->select('SubjectCode, Course, cMajor, YearLevel, Section, Semester, SY');
-    $existingSubjects = $this->db->get('semsubjects')->result();
+			$this->db->select('SubjectCode, Course, cMajor, YearLevel, Section, Semester, SY');
+			$existingSubjects = $this->db->get('semsubjects')->result();
 
-    $existingKeys = [];
-    foreach ($existingSubjects as $row) {
-        $key = implode('|', [
-            trim($row->SubjectCode),
-            trim($row->Course),
-            trim($row->cMajor),
-            trim($row->YearLevel),
-            trim($row->Section),
-            trim($row->Semester),
-            trim($row->SY)
-        ]);
-        $existingKeys[] = $key;
-    }
+			$existingKeys = [];
+			foreach ($existingSubjects as $row) {
+				$key = implode('|', [
+					trim($row->SubjectCode),
+					trim($row->Course),
+					trim($row->cMajor),
+					trim($row->YearLevel),
+					trim($row->Section),
+					trim($row->Semester),
+					trim($row->SY)
+				]);
+				$existingKeys[] = $key;
+			}
 
-    for ($i = 0; $i < count($subjectCodes); $i++) {
-        $subjectCode = trim($subjectCodes[$i]);
-        $description = trim($descriptions[$i]);
-        $lecUnit     = trim($lecUnits[$i]);
-        $labUnit     = trim($labUnits[$i]);
-        $instructor  = trim($instructors[$i]);
-        $room        = isset($rooms[$i]) ? trim($rooms[$i]) : '';   // NEW
-        $schedTime   = trim($schedTimes[$i]);
+			for ($i = 0; $i < count($subjectCodes); $i++) {
+				$subjectCode = trim($subjectCodes[$i]);
+				$description = trim($descriptions[$i]);
+				$lecUnit     = trim($lecUnits[$i]);
+				$labUnit     = trim($labUnits[$i]);
+				$instructor  = trim($instructors[$i]);
+				$room        = isset($rooms[$i]) ? trim($rooms[$i]) : '';   // NEW
+				$schedTime   = trim($schedTimes[$i]);
 
-        $entryKey = implode('|', [
-            $subjectCode,
-            trim($courseDescription),
-            trim($major),
-            trim($yearLevel),
-            trim($section),
-            trim($semester),
-            trim($sy)
-        ]);
+				$entryKey = implode('|', [
+					$subjectCode,
+					trim($courseDescription),
+					trim($major),
+					trim($yearLevel),
+					trim($section),
+					trim($semester),
+					trim($sy)
+				]);
 
-        if (in_array($entryKey, $existingKeys)) {
-            $skipped++;
-            continue;
-        }
+				if (in_array($entryKey, $existingKeys)) {
+					$skipped++;
+					continue;
+				}
 
-        $data = [
-            'SubjectCode' => $subjectCode,
-            'Description' => $description,
-            'LecUnit'     => $lecUnit,
-            'LabUnit'     => $labUnit,
-            'Section'     => $section,
-            'SchedTime'   => $schedTime,
-            'LabTime'     => '',
-            'Slot'        => '',
-            'IDNumber'    => $instructor,
-            'Course'      => $courseDescription,
-            'cMajor'      => $major,
-            'YearLevel'   => $yearLevel,
-            'Semester'    => $semester,
-            'SY'          => $sy,
-            'Room'        => $room, // NEW
-        ];
+				$data = [
+					'SubjectCode' => $subjectCode,
+					'Description' => $description,
+					'LecUnit'     => $lecUnit,
+					'LabUnit'     => $labUnit,
+					'Section'     => $section,
+					'SchedTime'   => $schedTime,
+					'LabTime'     => '',
+					'Slot'        => '',
+					'IDNumber'    => $instructor,
+					'Course'      => $courseDescription,
+					'cMajor'      => $major,
+					'YearLevel'   => $yearLevel,
+					'Semester'    => $semester,
+					'SY'          => $sy,
+					'Room'        => $room, // NEW
+				];
 
-        $this->db->insert('semsubjects', $data);
-        $inserted++;
-        $existingKeys[] = $entryKey;
-    }
+				$this->db->insert('semsubjects', $data);
+				$inserted++;
+				$existingKeys[] = $entryKey;
+			}
 
-    $msg = "{$inserted} subject(s) saved. {$skipped} duplicate(s) skipped.";
-    $this->session->set_flashdata('success', $msg);
-    redirect('Settings/classprogramform_head');
-    return;
-}
+			$msg = "{$inserted} subject(s) saved. {$skipped} duplicate(s) skipped.";
+			$this->session->set_flashdata('success', $msg);
+			redirect('Settings/classprogramform_head');
+			return;
+		}
 
 		// Page Load
 		$result['sub3']        = $this->SettingsModel->GetSub3(); // year levels
@@ -1731,132 +1845,131 @@ public function getRooms()
 
 
 
-public function grades_status_list()
-{
-    $this->load->model('SettingsModel');
+	public function grades_status_list()
+	{
+		$this->load->model('SettingsModel');
 
-    $id  = (string)$this->session->userdata('username'); // Program Head's IDNumber
-    $sy  = (string)$this->session->userdata('sy');
-    $sem = (string)$this->session->userdata('semester');
+		$id  = (string)$this->session->userdata('username'); // Program Head's IDNumber
+		$sy  = (string)$this->session->userdata('sy');
+		$sem = (string)$this->session->userdata('semester');
 
-    // Resolve Program Head's course/major
-    $courseRow = $this->db->select('CourseDescription, Major')
-                          ->from('course_table')
-                          ->where('IDNumber', $id)
-                          ->get()->row();
-    if (!$courseRow) {
-        $this->session->set_flashdata('error', 'No course data found for this Program Head.');
-        return redirect('dashboard_instructor');
-    }
+		// Resolve Program Head's course/major
+		$courseRow = $this->db->select('CourseDescription, Major')
+			->from('course_table')
+			->where('IDNumber', $id)
+			->get()->row();
+		if (!$courseRow) {
+			$this->session->set_flashdata('error', 'No course data found for this Program Head.');
+			return redirect('dashboard_instructor');
+		}
 
-    $courseDescription = (string)$courseRow->CourseDescription;
-    $major             = (string)$courseRow->Major; // may be empty
+		$courseDescription = (string)$courseRow->CourseDescription;
+		$major             = (string)$courseRow->Major; // may be empty
 
-    // Base: subjects for this program (by SY/Sem/Course[/Major])
-    // Note: Encoded = at least one non-zero grade in grades_o for that period
-    //       Submitted = any matching row in grade_receipts for that period
-    $this->db->from('semsubjects s');
-    $this->db->select([
-        's.subjectid',
-        's.SubjectCode',
-        's.Description',
-        's.Section',
-        's.Course',
-        's.cMajor as Major',
-        's.YearLevel',
-        's.SY',
-        's.Semester',
-        "CONCAT(st.FirstName,' ',st.MiddleName,' ',st.LastName) AS Fullname",
+		// Base: subjects for this program (by SY/Sem/Course[/Major])
+		// Note: Encoded = at least one non-zero grade in grades_o for that period
+		//       Submitted = any matching row in grade_receipts for that period
+		$this->db->from('semsubjects s');
+		$this->db->select([
+			's.subjectid',
+			's.SubjectCode',
+			's.Description',
+			's.Section',
+			's.Course',
+			's.cMajor as Major',
+			's.YearLevel',
+			's.SY',
+			's.Semester',
+			"CONCAT(st.FirstName,' ',st.MiddleName,' ',st.LastName) AS Fullname",
 
-        // ===== Encoded flags (non-zero) =====
-        // Prelim
-        "(SELECT COUNT(1) FROM grades_o go
+			// ===== Encoded flags (non-zero) =====
+			// Prelim
+			"(SELECT COUNT(1) FROM grades_o go
            WHERE go.SY=s.SY AND go.Semester=s.Semester
              AND go.Course=s.Course AND (go.Major=s.cMajor OR s.cMajor='')
              AND go.Section=s.Section AND go.SubjectCode=s.SubjectCode
              AND go.Prelim IS NOT NULL AND COALESCE(go.Prelim,0) <> 0
          ) AS prelim_encoded_cnt",
 
-        // Midterm
-        "(SELECT COUNT(1) FROM grades_o go
+			// Midterm
+			"(SELECT COUNT(1) FROM grades_o go
            WHERE go.SY=s.SY AND go.Semester=s.Semester
              AND go.Course=s.Course AND (go.Major=s.cMajor OR s.cMajor='')
              AND go.Section=s.Section AND go.SubjectCode=s.SubjectCode
              AND go.Midterm IS NOT NULL AND COALESCE(go.Midterm,0) <> 0
          ) AS midterm_encoded_cnt",
 
-        // PreFinal
-        "(SELECT COUNT(1) FROM grades_o go
+			// PreFinal
+			"(SELECT COUNT(1) FROM grades_o go
            WHERE go.SY=s.SY AND go.Semester=s.Semester
              AND go.Course=s.Course AND (go.Major=s.cMajor OR s.cMajor='')
              AND go.Section=s.Section AND go.SubjectCode=s.SubjectCode
              AND go.PreFinal IS NOT NULL AND COALESCE(go.PreFinal,0) <> 0
          ) AS prefinal_encoded_cnt",
 
-        // Final
-        "(SELECT COUNT(1) FROM grades_o go
+			// Final
+			"(SELECT COUNT(1) FROM grades_o go
            WHERE go.SY=s.SY AND go.Semester=s.Semester
              AND go.Course=s.Course AND (go.Major=s.cMajor OR s.cMajor='')
              AND go.Section=s.Section AND go.SubjectCode=s.SubjectCode
              AND go.Final IS NOT NULL AND COALESCE(go.Final,0) <> 0
          ) AS final_encoded_cnt",
 
-        // ===== Submitted flags (grade_receipts) =====
-        "(SELECT COUNT(1) FROM grade_receipts r
+			// ===== Submitted flags (grade_receipts) =====
+			"(SELECT COUNT(1) FROM grade_receipts r
            WHERE r.SY=s.SY AND r.Semester=s.Semester
              AND r.Course=s.Course AND (r.Major=s.cMajor OR s.cMajor='')
              AND r.Section=s.Section AND r.SubjectCode=s.SubjectCode
              AND r.period='prelim'
          ) AS prelim_submitted_cnt",
 
-        "(SELECT COUNT(1) FROM grade_receipts r
+			"(SELECT COUNT(1) FROM grade_receipts r
            WHERE r.SY=s.SY AND r.Semester=s.Semester
              AND r.Course=s.Course AND (r.Major=s.cMajor OR s.cMajor='')
              AND r.Section=s.Section AND r.SubjectCode=s.SubjectCode
              AND r.period='midterm'
          ) AS midterm_submitted_cnt",
 
-        "(SELECT COUNT(1) FROM grade_receipts r
+			"(SELECT COUNT(1) FROM grade_receipts r
            WHERE r.SY=s.SY AND r.Semester=s.Semester
              AND r.Course=s.Course AND (r.Major=s.cMajor OR s.cMajor='')
              AND r.Section=s.Section AND r.SubjectCode=s.SubjectCode
              AND r.period='prefinal'
          ) AS prefinal_submitted_cnt",
 
-        "(SELECT COUNT(1) FROM grade_receipts r
+			"(SELECT COUNT(1) FROM grade_receipts r
            WHERE r.SY=s.SY AND r.Semester=s.Semester
              AND r.Course=s.Course AND (r.Major=s.cMajor OR s.cMajor='')
              AND r.Section=s.Section AND r.SubjectCode=s.SubjectCode
              AND r.period='final'
          ) AS final_submitted_cnt",
-    ]);
-    $this->db->join('staff st', 'st.IDNumber = s.IDNumber', 'left');
-    $this->db->where('s.Course', $courseDescription);
-    $this->db->where('s.SY', $sy);
-    $this->db->where('s.Semester', $sem);
-    if ($major !== '') {
-        $this->db->where('s.cMajor', $major);
-    }
-    $this->db->order_by('s.YearLevel, s.Section, s.SubjectCode');
+		]);
+		$this->db->join('staff st', 'st.IDNumber = s.IDNumber', 'left');
+		$this->db->where('s.Course', $courseDescription);
+		$this->db->where('s.SY', $sy);
+		$this->db->where('s.Semester', $sem);
+		if ($major !== '') {
+			$this->db->where('s.cMajor', $major);
+		}
+		$this->db->order_by('s.YearLevel, s.Section, s.SubjectCode');
 
-    $rows = $this->db->get()->result();
+		$rows = $this->db->get()->result();
 
-    // Group for view: YearLevel → Section
-    $grouped = [];
-    foreach ($rows as $r) {
-        $yl = $r->YearLevel ?: '—';
-        $grouped[$yl][$r->Section][] = $r;
-    }
+		// Group for view: YearLevel → Section
+		$grouped = [];
+		foreach ($rows as $r) {
+			$yl = $r->YearLevel ?: '—';
+			$grouped[$yl][$r->Section][] = $r;
+		}
 
-    $data = [
-        'courseDescription' => $courseDescription,
-        'major'             => $major,
-        'sy'                => $sy,
-        'sem'               => $sem,
-        'grouped'           => $grouped,
-    ];
+		$data = [
+			'courseDescription' => $courseDescription,
+			'major'             => $major,
+			'sy'                => $sy,
+			'sem'               => $sem,
+			'grouped'           => $grouped,
+		];
 
-    $this->load->view('grades_status_list', $data);
-}
-
+		$this->load->view('grades_status_list', $data);
+	}
 }

@@ -3,7 +3,7 @@
 
 <?php include('includes/head.php'); ?>
 
-    <link href="<?= base_url(); ?>assets/libs/select2/select2.min.css" rel="stylesheet" type="text/css" />
+<link href="<?= base_url(); ?>assets/libs/select2/select2.min.css" rel="stylesheet" type="text/css" />
 
 <body>
 
@@ -28,11 +28,11 @@
         <!-- Start Content-->
         <div class="container-fluid">
           <?php
-            $flashMsgRaw = $this->session->flashdata('msg');
-            $flashSuccess = $this->session->flashdata('success');
-            $flashError = $this->session->flashdata('error');
-            $flashInfo = $this->session->flashdata('info');
-            $flashMsg = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
+          $flashMsgRaw = $this->session->flashdata('msg');
+          $flashSuccess = $this->session->flashdata('success');
+          $flashError = $this->session->flashdata('error');
+          $flashInfo = $this->session->flashdata('info');
+          $flashMsg = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
           ?>
 
           <!-- start page title -->
@@ -113,8 +113,8 @@
                                   data-course-name="<?= htmlspecialchars($row->CourseDescription, ENT_QUOTES, 'UTF-8'); ?>">
                                   <i class="mdi mdi-delete-forever"></i> Delete
                                 </a>
-                          </td>
-                        <?php } ?>
+                              </td>
+                            <?php } ?>
                         </tbody>
 
                       </table>
@@ -196,7 +196,7 @@
                     <input type="text" class="form-control" name="SeriesYear" placeholder="">
                   </div>
                 </div>
-           <!-- <div class="form-group row">
+                <!-- <div class="form-group row">
   <label for="ProgramHead" class="col-md-4 col-form-label">Program Head</label>
   <div class="col-md-8">
     <select class="form-control select2" name="IDNumber" id="IDNumber">
@@ -269,7 +269,7 @@
 
   <!-- App js -->
   <script src="<?= base_url(); ?>assets/js/app.min.js"></script>
-    <script src="<?= base_url(); ?>assets/libs/select2/select2.min.js"></script>
+  <script src="<?= base_url(); ?>assets/libs/select2/select2.min.js"></script>
 
   <!-- Required datatable js -->
   <script src="<?= base_url(); ?>assets/libs/datatables/jquery.dataTables.min.js"></script>
@@ -288,13 +288,13 @@
   <script src="<?= base_url(); ?>assets/libs/datatables/responsive.bootstrap4.min.js"></script>
 
   <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.keyTable.min.js"></script>
-<script src="<?= base_url(); ?>assets/libs/datatables/dataTables.select.min.js"></script>
+  <script src="<?= base_url(); ?>assets/libs/datatables/dataTables.select.min.js"></script>
 
   <!-- Datatables init -->
   <script src="<?= base_url(); ?>assets/js/pages/datatables.init.js"></script>
 
   <script>
-    (function () {
+    (function() {
       function showAlert(options) {
         if (!options) {
           return Promise.resolve();
@@ -360,7 +360,7 @@
         return null;
       }
 
-      document.addEventListener('click', function (event) {
+      document.addEventListener('click', function(event) {
         var trigger = closestByClass(event.target, 'course-delete-btn');
         if (!trigger) {
           return;
@@ -384,7 +384,7 @@
             cancelButtonText: 'Cancel',
             confirmButtonColor: '#f1556c',
             cancelButtonColor: '#6c757d'
-          }).then(function (result) {
+          }).then(function(result) {
             var confirmed = false;
             if (result) {
               if (typeof result.isConfirmed !== 'undefined') {
@@ -406,11 +406,11 @@
     })();
   </script>
 
- <script>
-        $(document).ready(function() {
-            $('.select2').select2();
-        });
-    </script>
+  <script>
+    $(document).ready(function() {
+      $('.select2').select2();
+    });
+  </script>
 </body>
 
 </html>

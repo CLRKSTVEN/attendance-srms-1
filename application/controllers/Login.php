@@ -7,6 +7,7 @@ class Login extends CI_Controller
         $this->load->model('Login_model');
         $this->load->model('SettingsModel');
         $this->load->model('StudentModel');
+        $this->load->model('AuditLogModel');
     }
 
     function index()
@@ -142,6 +143,18 @@ class Login extends CI_Controller
                     'logged_in' => TRUE
                 );
                 $this->session->set_userdata($user_data);
+                // AUDIT: successful login
+                $this->AuditLogModel->write(
+                    'login',
+                    'Login',
+                    null,
+                    null,
+                    null,
+                    null,
+                    1,
+                    'User logged in successfully',
+                    ['posted_sy' => $sy, 'posted_semester' => $semester]
+                );
 
                 if ($next) {
                     $host  = parse_url($next, PHP_URL_HOST);
@@ -244,43 +257,105 @@ class Login extends CI_Controller
             } else {
                 // Inactive account
                 $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
+                // AUDIT: login failed (inactive account)
+                $this->AuditLogModel->write(
+                    'login',
+                    'Login',
+                    null,
+                    null,
+                    null,
+                    ['reason' => 'inactive account'],
+                    0,
+                    'Login failed',
+                    ['attempted_username' => $username]
+                );
                 $this->session->set_flashdata('auth_error', 'Your account is not active. Please contact support.');
                 redirect('login' . ($next ? ('?next=' . urlencode($next)) : ''));
+
 
                 return;
             }
         } else {
             // Invalid credentials
             $this->Login_model->log_login_attempt($username, $raw_password, 'failed');
+            // AUDIT: login failed (invalid credentials)
+            $this->AuditLogModel->write(
+                'login',
+                'Login',
+                null,
+                null,
+                null,
+                ['reason' => 'invalid credentials'],
+                0,
+                'Login failed',
+                ['attempted_username' => $username]
+            );
             $this->session->set_flashdata('auth_error', 'The username or password is incorrect!');
             redirect('login' . ($next ? ('?next=' . urlencode($next)) : ''));
+
 
             return;
         }
     }
-
 
     public function deleteUser($user)
     {
         // Attempt to delete the user
         $deleteSuccess = $this->Login_model->deleteUser($user);
 
-        // Check the outcome of the delete operation and set the appropriate flash message
         if ($deleteSuccess) {
+            // AUDIT: user delete (success)
+            $this->AuditLogModel->write(
+                'delete',
+                'User Accounts',
+                'users',            // adjust to your actual users table if different
+                $user,              // target username (record_pk)
+                null,
+                null,
+                1,
+                'Deleted user account',
+                ['target_username' => $user]
+            );
+
             $this->session->set_flashdata('success', '<div class="alert alert-success">User account deleted successfully.</div>');
         } else {
+            // AUDIT: user delete (failed)
+            $this->AuditLogModel->write(
+                'delete',
+                'User Accounts',
+                'users',
+                $user,
+                null,
+                null,
+                0,
+                'Failed to delete user account',
+                ['target_username' => $user]
+            );
+
             $this->session->set_flashdata('error', '<div class="alert alert-danger">Error deleting enrollment. Please try again.</div>');
         }
 
-        // Redirect back to the user accounts page
         redirect(base_url('Page/userAccounts'));
     }
 
     function logout()
     {
+        // AUDIT: logout
+        $this->AuditLogModel->write(
+            'logout',
+            'Login',
+            null,
+            null,
+            null,
+            null,
+            1,
+            'User logged out'
+        );
+
         $this->session->sess_destroy();
         redirect('login');
     }
+
     public function forgot_pass()
     {
         $email = $this->input->post('email');
