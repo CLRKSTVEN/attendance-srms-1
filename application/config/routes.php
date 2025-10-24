@@ -58,3 +58,5 @@ $route['AttendanceLogs/activity/(:num)']     = 'AttendanceLogs/activity/$1';
 $route['AttendanceLogs/export_csv/(:num)']   = 'AttendanceLogs/export_csv/$1';
 $route['Page/editSignup/(:any)'] = 'Page/editSignup/$1';
 $route['reports'] = 'Reports/index';
+$route['fbmso-personnels']        = 'FbmsoPersonnels/index';
+$route['admin/fbmso-personnels']  = 'FbmsoPersonnels/manage';

@@ -222,6 +222,11 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                         </ul>
                     </li>
                     <li>
+                        <a href="<?= base_url('FbmsoPersonnels/manage') ?>">
+                            <i class="mdi mdi-account-group"></i> <span> FBMSO Officials </span>
+                        </a>
+                    </li>
+                    <li>
                         <a href="<?= base_url('Login/logout'); ?>" class="waves-effect logout-confirm">
                             <i class="ion bi bi-box-arrow-right"></i>
                             <span> Logout </span>
@@ -1190,6 +1195,12 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
 
                             <li><a href="<?= base_url('Page/changepassword'); ?>">Change Password</a></li>
                         </ul>
+                    </li>
+                    <li>
+                        <a href="<?= base_url('FbmsoPersonnels'); ?>" class="waves-effect">
+                            <i class="mdi mdi-account-group"></i>
+                            <span> FBMSO Officials </span>
+                        </a>
                     </li>
 
                     <li>
