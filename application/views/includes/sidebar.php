@@ -129,6 +129,12 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                             <span> Announcement </span>
                         </a>
                     </li>
+                    <li>
+                        <a href="<?= base_url('reports'); ?>" class="waves-effect">
+                            <i class="bi bi-bar-chart-line"></i>
+                            <span> Reports </span>
+                        </a>
+                    </li>
 
                     <!-- To Do (keep visible) -->
                     <!-- <li>
