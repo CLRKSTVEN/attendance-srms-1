@@ -198,7 +198,7 @@ $showOnline = (int)($online_settings->show_online_payments ?? 1);
                                 <a class="<?= $sectionLinkClass; ?>" href="<?= base_url('Page/manageSections'); ?>"> Sections </a>
                             </li>
                             <li>
-                                <a class="<?= $userLinkClass; ?>" href="<?= base_url('Page/userAccounts'); ?>"> User Accounts </a>
+                                <a class="<?= $userLinkClass; ?>" href="<?= base_url('Page/userAccounts'); ?>"> Admin Accounts </a>
                             </li>
                         </ul>
                     </li>

@@ -7,12 +7,11 @@
     <?php include('includes/top-nav-bar.php'); ?>
     <?php include('includes/sidebar.php'); ?>
     <?php
-    // Helper to build the view URL for a student's profile
+
     function view_signup_url($id)
     {
-      // Choose your preferred style; both are supported by the controller patch.
-      // return site_url('Page/editSignup/' . rawurlencode($id)); // segment style
-      return site_url('Page/editSignup') . '?id=' . rawurlencode($id); // query style
+
+      return site_url('Page/editSignup') . '?id=' . rawurlencode($id);
     }
     ?>
     <div class="content-page">
@@ -28,12 +27,17 @@
             <div class="col-md-12">
               <div class="page-title-box">
                 <div class="d-flex justify-content-between align-items-center mb-2">
-                  <a href="<?= base_url('Page/admin'); ?>" class="btn btn-primary btn-sm">
-                    <i class="mdi mdi-arrow-left"></i> Back to Dashboard
-                  </a>
-                  <a href="<?= site_url('Registration/index') . '?source=admin'; ?>" class="btn btn-success btn-sm">
-                    <i class="mdi mdi-account-plus"></i> Add Student
-                  </a>
+                  <div>
+                    <a href="<?= base_url('Page/admin'); ?>" class="btn btn-primary btn-sm">
+                      <i class="mdi mdi-arrow-left"></i> Back to Dashboard
+                    </a>
+                    <a href="<?= site_url('Registration/index') . '?source=admin'; ?>" class="btn btn-success btn-sm">
+                      <i class="mdi mdi-account-plus"></i> Add Student
+                    </a>
+                    <button type="button" class="btn btn-dark btn-sm" onclick="window.print()">
+                      <i class="mdi mdi-printer"></i> Print
+                    </button>
+                  </div>
                 </div>
                 <hr style="border:0;height:2px;background:linear-gradient(to right,#4285F4 60%,#FBBC05 80%,#34A853 100%);border-radius:1px;margin:20px 0;">
               </div>
@@ -44,7 +48,7 @@
             <div class="col-md-12">
               <div class="card">
                 <div class="card-body table-responsive">
-                  <h4 class="m-t-0 header-title mb-4">STUDENTS' LIST</h4>
+                  <h4 class="m-t-0 header-title mb-4">LIST OF REGISTERED STUDENTS</h4>
                   <table id="datatable" class="table table-bordered dt-responsive nowrap" style="width:100%">
                     <thead>
                       <tr>
@@ -118,7 +122,6 @@
 
   <?php include('includes/themecustomizer.php'); ?>
 
-  <!-- Vendor / DataTables -->
   <script src="<?= base_url(); ?>assets/js/vendor.min.js"></script>
   <script src="<?= base_url(); ?>assets/libs/sweetalert2/sweetalert2.min.js"></script>
   <link href="<?= base_url(); ?>assets/libs/datatables/dataTables.bootstrap4.min.css" rel="stylesheet" />
@@ -231,6 +234,64 @@
       });
     })();
   </script>
+
+  <style>
+    @media print {
+
+
+      #wrapper .topbar,
+      #wrapper .left-side-menu,
+      #wrapper .sidebar,
+      #wrapper .right-bar,
+      .page-title-box,
+      .themecustomizer,
+      .footer,
+      .btn,
+      .delete-signup-form,
+      .delete-signup-btn {
+        display: none !important;
+      }
+
+
+      .dataTables_wrapper .dataTables_filter,
+      .dataTables_wrapper .dataTables_length,
+      .dataTables_wrapper .dataTables_info,
+      .dataTables_wrapper .dataTables_paginate {
+        display: none !important;
+      }
+
+
+      #datatable th:nth-child(4),
+      #datatable td:nth-child(4) {
+        display: none !important;
+      }
+
+
+      #datatable td:nth-child(1) .text-muted.small {
+        display: none !important;
+      }
+
+
+      @page {
+        size: A4 portrait;
+        margin: 12mm;
+      }
+
+      body {
+        margin: 0;
+      }
+
+      table {
+        font-size: 11pt;
+      }
+
+      th,
+      td {
+        padding: 6px 8px !important;
+      }
+    }
+  </style>
+
 </body>
 
 </html>

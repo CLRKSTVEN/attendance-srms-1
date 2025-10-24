@@ -300,8 +300,9 @@ $flashMsg      = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
                                                             <th>Check-Out</th>
                                                             <th>Course</th>
                                                             <th>Year</th>
-                                                            <th>Checked-In By</th>
                                                             <th>Remarks</th>
+                                                            <th>Checked-In By</th>
+
 
                                                         </tr>
                                                     </thead>
@@ -348,8 +349,9 @@ $flashMsg      = $flashMsgRaw ? strip_tags($flashMsgRaw) : null;
                                                                     <?php endif; ?>
                                                                 </td>
                                                                 <td><?= h($r->YearLevel) ?></td>
-                                                                <td><?= h($r->checked_in_by) ?></td>
                                                                 <td><?= h($remarkOut) ?></td> <!-- NEW -->
+                                                                <td><?= h($r->checked_in_by) ?></td>
+
                                                             </tr>
 
                                                         <?php endforeach; ?>
