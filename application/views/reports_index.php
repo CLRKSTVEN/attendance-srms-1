@@ -1,6 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-<?php include('includes/head.php'); ?>
+<?php
+include('includes/head.php');
+$reportSectionOptions = [
+    ['id' => 'by_yearlevel', 'label' => 'Students by Year Level'],
+    ['id' => 'by_course', 'label' => 'Students by Course'],
+    ['id' => 'sections_per_course', 'label' => 'Sections per Course'],
+    ['id' => 'by_section', 'label' => 'Students by Section'],
+    ['id' => 'events', 'label' => 'Events'],
+    ['id' => 'attendance', 'label' => 'Recent Attendance'],
+];
+?>
 
 <body>
     <div id="wrapper">
@@ -17,6 +27,9 @@
                                     <h4 class="page-title mb-1">Reports & Insights</h4>
                                 </div>
                                 <div class="btn-group no-print">
+                                    <button type="button" id="exportBtn" class="btn btn-outline-secondary btn-sm">
+                                        <i class="mdi mdi-file-delimited"></i> Export CSV
+                                    </button>
                                     <button type="button" id="printBtn" class="btn btn-primary btn-sm">
                                         <i class="mdi mdi-printer"></i> Print
                                     </button>
@@ -346,7 +359,7 @@
 
     <?php include('includes/footer_plugins.php'); ?>
 
-    <div class="modal fade no-print" id="printPicker" tabindex="-1" role="dialog" aria-hidden="true">
+    <div class="modal fade no-print" id="actionPicker" tabindex="-1" role="dialog" aria-hidden="true">
         <div class="modal-dialog modal-sm modal-dialog-centered" role="document">
             <div class="modal-content">
                 <div class="modal-header py-2">
@@ -357,39 +370,22 @@
                 </div>
                 <div class="modal-body p-3">
                     <div class="custom-control custom-checkbox mb-2">
-                        <input type="checkbox" class="custom-control-input print-opt" id="optAll" checked>
-                        <label class="custom-control-label" for="optAll"><strong>Print All</strong></label>
+                        <input type="checkbox" class="custom-control-input picker-opt" id="optAll" checked>
+                        <label class="custom-control-label" for="optAll"><strong>Include All</strong></label>
                     </div>
                     <hr>
 
-                    <div class="custom-control custom-checkbox mb-2">
-                        <input type="checkbox" class="custom-control-input print-opt-item" id="optYear" data-target="by_yearlevel" checked>
-                        <label class="custom-control-label" for="optYear">Students by Year Level</label>
-                    </div>
-                    <div class="custom-control custom-checkbox mb-2">
-                        <input type="checkbox" class="custom-control-input print-opt-item" id="optCourse" data-target="by_course" checked>
-                        <label class="custom-control-label" for="optCourse">Students by Course</label>
-                    </div>
-                    <div class="custom-control custom-checkbox mb-2">
-                        <input type="checkbox" class="custom-control-input print-opt-item" id="optSections" data-target="sections_per_course" checked>
-                        <label class="custom-control-label" for="optSections">Sections per Course</label>
-                    </div>
-                    <div class="custom-control custom-checkbox mb-2">
-                        <input type="checkbox" class="custom-control-input print-opt-item" id="optBySection" data-target="by_section" checked>
-                        <label class="custom-control-label" for="optBySection">Students by Section</label>
-                    </div>
-                    <div class="custom-control custom-checkbox mb-2">
-                        <input type="checkbox" class="custom-control-input print-opt-item" id="optEvents" data-target="events" checked>
-                        <label class="custom-control-label" for="optEvents">Events</label>
-                    </div>
-                    <div class="custom-control custom-checkbox">
-                        <input type="checkbox" class="custom-control-input print-opt-item" id="optAttendance" data-target="attendance" checked>
-                        <label class="custom-control-label" for="optAttendance">Recent Attendance</label>
-                    </div>
+                    <?php foreach ($reportSectionOptions as $index => $option): ?>
+                        <?php $isLast = $index === count($reportSectionOptions) - 1; ?>
+                        <div class="custom-control custom-checkbox<?= $isLast ? '' : ' mb-2'; ?>">
+                            <input type="checkbox" class="custom-control-input picker-opt-item" id="opt-<?= $option['id']; ?>" data-target="<?= $option['id']; ?>" checked>
+                            <label class="custom-control-label" for="opt-<?= $option['id']; ?>"><?= $option['label']; ?></label>
+                        </div>
+                    <?php endforeach; ?>
                 </div>
                 <div class="modal-footer py-2">
                     <button type="button" class="btn btn-light btn-sm" data-dismiss="modal">Cancel</button>
-                    <button type="button" id="confirmPrint" class="btn btn-primary btn-sm"><i class="mdi mdi-printer"></i> Print</button>
+                    <button type="button" id="confirmAction" class="btn btn-primary btn-sm" data-mode="print"><i class="mdi mdi-printer"></i> Print</button>
                 </div>
             </div>
         </div>
@@ -432,38 +428,190 @@
                 }
             });
 
-            $('#printBtn').on('click', function() {
-                $('#optAll').prop('checked', true).trigger('change');
-                $('#printPicker').modal('show');
-            });
-            $('#optAll').on('change', function() {
-                var checked = $(this).is(':checked');
-                $('.print-opt-item').prop('checked', checked);
-            });
-            $('.print-opt-item').on('change', function() {
-                var allOn = $('.print-opt-item').length === $('.print-opt-item:checked').length;
-                $('#optAll').prop('checked', allOn);
-            });
-            $('#confirmPrint').on('click', function() {
-                $('#printPicker').modal('hide');
-                var selected = $('.print-opt-item:checked').map(function() {
+            function setPickerMode(mode) {
+                var $modal = $('#actionPicker');
+                var $title = $modal.find('.modal-title');
+                var $confirm = $('#confirmAction');
+
+                if (mode === 'export') {
+                    $title.text('Export Options');
+                    $confirm
+                        .data('mode', 'export')
+                        .removeClass('btn-primary')
+                        .addClass('btn-success')
+                        .html('<i class="mdi mdi-file-delimited"></i> Export CSV');
+                } else {
+                    $title.text('Print Options');
+                    $confirm
+                        .data('mode', 'print')
+                        .removeClass('btn-success')
+                        .addClass('btn-primary')
+                        .html('<i class="mdi mdi-printer"></i> Print');
+                }
+            }
+
+            function getSelectedTargets() {
+                return $('.picker-opt-item:checked').map(function() {
                     return $(this).data('target');
                 }).get();
+            }
+
+            function getCellText($cell) {
+                return $cell.text().replace(/\s+/g, ' ').trim();
+            }
+
+            function escapeCsv(value) {
+                if (value == null) {
+                    value = '';
+                }
+                value = value.toString();
+                if (/[",\r\n]/.test(value)) {
+                    value = '"' + value.replace(/"/g, '""') + '"';
+                }
+                return value;
+            }
+
+            function exportSectionsToCsv(sectionIds) {
+                var rows = [];
+
+                sectionIds.forEach(function(id) {
+                    var $section = $('[data-print-id="' + id + '"]');
+                    if (!$section.length) {
+                        return;
+                    }
+
+                    var title = $section.find('.only-print').first().text().trim();
+                    if (!title) {
+                        var $toggle = $section.find('.section-toggle').first().clone();
+                        $toggle.find('.mdi').remove();
+                        title = $toggle.text().replace(/\s+/g, ' ').trim();
+                    }
+                    if (!title) {
+                        title = id;
+                    }
+
+                    var $table = $section.find('table').first();
+                    if (!$table.length) {
+                        return;
+                    }
+
+                    if (rows.length) {
+                        rows.push([]);
+                    }
+                    rows.push([title]);
+
+                    var headers = $table.find('thead th').map(function() {
+                        return getCellText($(this));
+                    }).get();
+                    if (headers.length) {
+                        rows.push(headers);
+                    }
+
+                    $table.find('tbody tr').each(function() {
+                        var $cells = $(this).find('td');
+                        if (!$cells.length) {
+                            return;
+                        }
+                        var row = $cells.map(function() {
+                            return getCellText($(this));
+                        }).get();
+                        rows.push(row);
+                    });
+                });
+
+                if (!rows.length) {
+                    return;
+                }
+
+                var csvContent = rows.map(function(row) {
+                    return row.map(escapeCsv).join(',');
+                }).join('\r\n');
+
+                var blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                var url = URL.createObjectURL(blob);
+
+                var now = new Date();
+                var pad = function(num) {
+                    return num < 10 ? '0' + num : num;
+                };
+                var timestamp = [
+                    now.getFullYear(),
+                    pad(now.getMonth() + 1),
+                    pad(now.getDate())
+                ].join('') + '-' + [
+                    pad(now.getHours()),
+                    pad(now.getMinutes()),
+                    pad(now.getSeconds())
+                ].join('');
+
+                var filename = 'reports-export-' + timestamp + '.csv';
+
+                var link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', filename);
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }
+
+            $('#printBtn').on('click', function() {
+                setPickerMode('print');
+                $('#optAll').prop('checked', true).trigger('change');
+                $('#actionPicker').modal('show');
+            });
+
+            $('#exportBtn').on('click', function() {
+                setPickerMode('export');
+                $('#optAll').prop('checked', true).trigger('change');
+                $('#actionPicker').modal('show');
+            });
+
+            $('#optAll').on('change', function() {
+                var checked = $(this).is(':checked');
+                $('.picker-opt-item').prop('checked', checked);
+            });
+
+            $(document).on('change', '.picker-opt-item', function() {
+                var allOn = $('.picker-opt-item').length === $('.picker-opt-item:checked').length;
+                $('#optAll').prop('checked', allOn);
+            });
+
+            $('#confirmAction').on('click', function() {
+                var mode = $(this).data('mode');
+                var selected = getSelectedTargets();
+
+                if (!selected.length) {
+                    alert('Please select at least one section.');
+                    return;
+                }
+
+                $('#actionPicker').modal('hide');
+
+                if (mode === 'export') {
+                    exportSectionsToCsv(selected);
+                    return;
+                }
+
                 var all = $('[data-print-id]').map(function() {
                     return $(this).data('print-id');
                 }).get();
+
                 all.forEach(function(id) {
                     $('[data-print-id="' + id + '"]').addClass('print-hide');
                 });
+
                 selected.forEach(function(id) {
                     $('[data-print-id="' + id + '"]').removeClass('print-hide');
                 });
+
                 selected.forEach(function(id) {
                     var card = $('[data-print-id="' + id + '"]');
                     card.find('.collapse').collapse('show');
                 });
 
                 window.print();
+
                 setTimeout(function() {
                     $('[data-print-id]').removeClass('print-hide');
                 }, 500);
@@ -475,6 +623,10 @@
         .section-gutters {
             padding-left: .5rem;
             padding-right: .5rem;
+        }
+
+        .page-title-box .page-title {
+            color: #111827 !important;
         }
 
         @media (min-width:768px) {
@@ -646,6 +798,11 @@
             html,
             body {
                 background: #fff !important;
+                color: #000 !important;
+            }
+
+            body * {
+                color: #000 !important;
             }
 
             .no-print,
