@@ -7,6 +7,7 @@ class FbmsoPersonnels extends CI_Controller
     {
         parent::__construct();
         $this->load->model('FbmsoPersonnelsModel', 'Team');
+        $this->load->model('FbmsoPersonnelReviewsModel', 'Reviews');
         $this->load->model('SettingsModel'); // <-- add
         $this->load->helper(['form', 'url']);
         $this->load->library('upload');
@@ -14,8 +15,38 @@ class FbmsoPersonnels extends CI_Controller
         // if ($this->session->userdata('level')!=='Administrator') show_404();
     }
 
-    // DELETE this if you added it earlier:
-    // $this->load->model('SettingsModel');
+    private function is_student()
+    {
+        return $this->session->userdata('level') === 'Student';
+    }
+
+    private function is_admin()
+    {
+        return $this->session->userdata('level') === 'Administrator';
+    }
+
+    private function user_fullname_from_users($username)
+    {
+        if (!$username) return null;
+        $row = $this->db->get_where('o_users', ['username' => $username])->row();
+        if (!$row) return null;
+
+        $parts = array_filter([
+            trim($row->fName ?? ''),
+            trim($row->mName ?? ''),
+            trim($row->lName ?? ''),
+        ]);
+        $full = trim(implode(' ', $parts));
+        if ($full === '') $full = trim($row->name ?? '');
+        if ($full === '') $full = $username;
+        return strtoupper($full);
+    }
+
+    private function current_student_name()
+    {
+        if (!$this->is_student()) return null;
+        return $this->user_fullname_from_users($this->session->userdata('username'));
+    }
 
     private function school_info_block()
     {
@@ -39,12 +70,14 @@ class FbmsoPersonnels extends CI_Controller
         ]]];
     }
 
-
     /** Public landing page */
     public function index()
     {
         $data = $this->school_info_block();
         $data['people'] = $this->Team->all_active();
+        $data['reviews_by_person'] = $this->collect_reviews_by_person($data['people']);
+        $data['general_reviews']   = $this->Reviews->general_reviews();
+        $data['currentStudentName'] = $this->current_student_name(); // <-- pass to view
         $this->load->view('fbmso_team_public', $data);
     }
 
@@ -53,7 +86,102 @@ class FbmsoPersonnels extends CI_Controller
     {
         $data = $this->school_info_block();
         $data['people'] = $this->Team->all();
+        $data['reviews_by_person'] = $this->collect_reviews_by_person($data['people']);
+        $data['reviews_list']      = $this->Reviews->all_with_personnel();
+        $data['general_reviews']   = $this->Reviews->general_reviews();
+        $data['currentStudentName'] = $this->current_student_name(); // <-- pass to view
         $this->load->view('fbmso_team_manage', $data);
+    }
+
+    private function collect_reviews_by_person($people)
+    {
+        $ids = [];
+        if (!empty($people)) {
+            foreach ($people as $person) {
+                $ids[] = (int)$person->id;
+            }
+        }
+        return $this->Reviews->map_for_personnel_ids($ids);
+    }
+
+    public function review_save()
+    {
+        // Only students can submit reviews
+        if (!$this->is_student()) {
+            $this->session->set_flashdata('danger', 'Only students can submit reviews.');
+            redirect('FbmsoPersonnels/index');
+            return;
+        }
+
+        // Editing is disabled globally
+        $reviewId = (int)$this->input->post('review_id');
+        if ($reviewId) {
+            $this->session->set_flashdata('danger', 'Editing reviews is disabled once submitted.');
+            redirect('FbmsoPersonnels/index');
+            return;
+        }
+
+        $personnelRaw = trim((string)$this->input->post('personnel_id'));
+        $personnelId  = ($personnelRaw === '' || $personnelRaw === '0') ? null : (int)$personnelRaw;
+
+        // Force reviewer name from session / o_users
+        $reviewerName = $this->current_student_name();
+        if (!$reviewerName) {
+            $this->session->set_flashdata('danger', 'Unable to resolve your student identity.');
+            redirect('FbmsoPersonnels/index');
+            return;
+        }
+
+        $reviewText   = trim((string)$this->input->post('review_text', true));
+
+        if ($personnelId && !$this->Team->get($personnelId)) {
+            $this->session->set_flashdata('danger', 'Selected officer could not be found.');
+            redirect('FbmsoPersonnels/index');
+            return;
+        }
+
+        if ($reviewText === '') {
+            $this->session->set_flashdata('danger', 'Please complete all review fields.');
+            redirect('FbmsoPersonnels/index');
+            return;
+        }
+
+        $this->Reviews->create([
+            'personnel_id'  => $personnelId,
+            'reviewer_name' => $reviewerName, // <-- from session
+            'review_text'   => $reviewText,
+        ]);
+
+        $this->session->set_flashdata('success', 'Thank you for the review!');
+        redirect('FbmsoPersonnels/index');
+    }
+
+    public function review_delete($id = null)
+    {
+        // Only students can delete (note: without ownership field, this deletes any review)
+        if (!$this->is_student()) {
+            $this->session->set_flashdata('danger', 'Only students can delete reviews.');
+            redirect('FbmsoPersonnels/index');
+            return;
+        }
+
+        $id = (int)$id;
+        if (!$id) {
+            $this->session->set_flashdata('danger', 'Review not found.');
+            redirect('FbmsoPersonnels/index');
+            return;
+        }
+
+        $review = $this->Reviews->get($id);
+        if (!$review) {
+            $this->session->set_flashdata('danger', 'Review not found.');
+            redirect('FbmsoPersonnels/index');
+            return;
+        }
+
+        $this->Reviews->delete($id);
+        $this->session->set_flashdata('success', 'Review removed.');
+        redirect('FbmsoPersonnels/index');
     }
 
     public function save()
